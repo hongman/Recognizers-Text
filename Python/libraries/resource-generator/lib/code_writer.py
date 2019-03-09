@@ -1,6 +1,7 @@
 import abc, json, re
 from .yaml_parser import SimpleRegex, NestedRegex, ParamsRegex, Dictionary, List
 
+
 class CodeWriter:
     def __init__(self, name):
         self.name = name
@@ -9,55 +10,59 @@ class CodeWriter:
     def write(self):
         pass
 
+
 class DefaultWriter(CodeWriter):
     def __init__(self, name, definition):
         CodeWriter.__init__(self, name)
         self.definition = sanitize(definition)
+
     def write(self):
         return f'{self.name} = \'{self.definition}\''
+
 
 class SimpleRegexWriter(CodeWriter):
     def __init__(self, name, definition):
         CodeWriter.__init__(self, name)
         self.definition = sanitize(definition)
+
     def write(self):
         return f'{self.name} = f\'{self.definition}\''
+
 
 class NestedRegexWriter(SimpleRegexWriter):
     def __init__(self, name, definition, references):
         CodeWriter.__init__(self, name)
         self.definition = sanitize(definition, None, references)
 
+
 class ParamsRegexWriter(SimpleRegexWriter):
     def __init__(self, name, definition, params):
         CodeWriter.__init__(self, name)
         self.definition = sanitize(definition, None, params)
         self.params = ', '.join(params)
+
     def write(self):
         return f'{self.name} = lambda {self.params}: f\'{self.definition}\''
+
 
 class DictionaryWriter(CodeWriter):
     def __init__(self, name, key_type, value_type, entries):
         CodeWriter.__init__(self, name)
         self.entries = []
-        key_type = to_python_type(key_type)
-        value_type = to_python_type(value_type)
 
-        key_quote = '\'' if key_type=='string' else ''
-        value_quote = '\'' if value_type=='string' else ''
         for key, value in entries.items():
-            k = key.replace(r"\'", '\'').replace('\'', r"\'")
+            key = create_entry(key, key_type)
             if isinstance(value, list):
-                value = ', '.join(map(lambda x: json.dumps(x.value).replace("'", r"\'").replace('"', "'"), value))
-                v = f'[{value}]'
+                value = f"[{', '.join(map(lambda x: json.dumps(x.value), value))}]"
             else:
-                v = value.replace(r"\'", '\'').replace('\'', r"\'")
-            self.entries.append(f'({key_quote}{k}{key_quote}, {value_quote}{v}{value_quote})')
+                value = create_entry(value, value_type)
+            self.entries.append(f'({key}, {value})')
 
     def write(self):
-        spaces = ' ' * (len(f'{self.name} = dict([')+4)
+        spaces = ' ' * (len(f'{self.name} = dict([') + 4)
         joined_entries = f',\n{spaces}'.join(self.entries)
         return f'{self.name} = dict([{joined_entries}])'
+
 
 class ArrayWriter(CodeWriter):
     def __init__(self, name, value_type, entries):
@@ -65,16 +70,19 @@ class ArrayWriter(CodeWriter):
         self.entries = []
         value_type = to_python_type(value_type)
 
-        value_quote = '\'' if value_type=='string' else ''
+        value_quote = '\'' if value_type == 'string' else ''
+
         for value in entries:
-            self.entries.append(f'{value_quote}{value}{value_quote}')
-    
+            value = value.replace('\'', '\\\'')
+            self.entries.append(f'r{value_quote}{value}{value_quote}')
+
     def write(self):
         joined_entries = ', '.join(self.entries)
         return f'{self.name} = [{joined_entries}]'
 
-def sanitize(value: str, value_type = None, tokens = None):
-    value = value.replace('{','{{').replace('}','}}')
+
+def sanitize(value: str, value_type=None, tokens=None):
+    value = value.replace('{', '{{').replace('}', '}}')
     if tokens:
         for token in tokens:
             value = value.replace(f'{{{token}}}', token)
@@ -84,7 +92,17 @@ def sanitize(value: str, value_type = None, tokens = None):
     except:
         stringified = '"' + value + '"'
 
-    return stringified[1:len(stringified)-1].replace("'", r"\'")
+    return stringified[1:len(stringified) - 1].replace("'", r"\'")
+
+
+def create_entry(entry, entry_type: str) -> str:
+    if to_python_type(entry_type) == 'string':
+        quote = '"'
+        entry = entry.replace('\\', r'\\').replace('"', r'\"')
+    else:
+        quote = ""
+    return f'{quote}{entry}{quote}'
+
 
 def to_python_type(type_: str) -> str:
     if type_ == 'long':
@@ -93,6 +111,7 @@ def to_python_type(type_: str) -> str:
         return 'string'
     else:
         return type_
+
 
 def generate_code(root):
     lines = []

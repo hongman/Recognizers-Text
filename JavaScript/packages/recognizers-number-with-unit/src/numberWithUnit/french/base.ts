@@ -4,6 +4,7 @@ import { Constants } from "../constants";
 import { INumberWithUnitExtractorConfiguration } from "../extractors";
 import { BaseNumberWithUnitParserConfiguration } from "../parsers";
 import { FrenchNumericWithUnit } from "../../resources/frenchNumericWithUnit";
+import { BaseUnits } from "../../resources/baseUnits";
 
 export abstract class FrenchNumberWithUnitExtractorConfiguration implements INumberWithUnitExtractorConfiguration {
     abstract readonly suffixList: ReadonlyMap<string, string>;
@@ -17,6 +18,8 @@ export abstract class FrenchNumberWithUnitExtractorConfiguration implements INum
     readonly buildSuffix: string;
     readonly connectorToken: string;
     readonly compoundUnitConnectorRegex: RegExp;
+    readonly nonUnitRegex: RegExp;
+    readonly ambiguousUnitNumberMultiplierRegex: RegExp;
 
     constructor(ci: CultureInfo) {
         this.cultureInfo = ci;
@@ -26,6 +29,7 @@ export abstract class FrenchNumberWithUnitExtractorConfiguration implements INum
         this.buildSuffix = FrenchNumericWithUnit.BuildSuffix;
         this.connectorToken = FrenchNumericWithUnit.ConnectorToken;
         this.compoundUnitConnectorRegex = RegExpUtility.getSafeRegExp(FrenchNumericWithUnit.CompoundUnitConnectorRegex);
+        this.nonUnitRegex = RegExpUtility.getSafeRegExp(BaseUnits.PmNonUnitRegex);
     }
 }
 

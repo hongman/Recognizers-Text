@@ -1882,17 +1882,17 @@
   },
   {
     "Input": "I'll be out in 3 years",
-    "NotSupported": "javascript, python, java",
+    "NotSupported": "javascript, python",
     "Results": []
   },
   {
     "Input": "I'll be out in 3 weeks",
-    "NotSupported": "javascript, python, java",
+    "NotSupported": "javascript, python",
     "Results": []
   },
   {
     "Input": "I'll be out in 3 months",
-    "NotSupported": "javascript, python, java",
+    "NotSupported": "javascript, python",
     "Results": []
   },
   {
@@ -3138,30 +3138,6 @@
     ]
   },
   {
-    "Input": "I'll be out 11 -2016",
-    "NotSupported": "javascript",
-    "Results": [
-      {
-        "Text": "11 -2016",
-        "Type": "daterange",
-        "Start": 12,
-        "Length": 8
-      }
-    ]
-  },
-  {
-    "Input": "I'll be out 11- 2016",
-    "NotSupported": "javascript",
-    "Results": [
-      {
-        "Text": "11- 2016",
-        "Type": "daterange",
-        "Start": 12,
-        "Length": 8
-      }
-    ]
-  },
-  {
     "Input": "I'll be out 11 - 2016",
     "NotSupported": "javascript",
     "Results": [
@@ -3724,6 +3700,17 @@
         "Type": "daterange",
         "Start": 35,
         "Length": 12
+      }
+    ]
+  },
+  {
+    "Input": "from 10/1 to 11/7",
+    "Results": [
+      {
+        "Text": "from 10/1 to 11/7",
+        "Type": "daterange",
+        "Start": 0,
+        "Length": 17
       }
     ]
   }

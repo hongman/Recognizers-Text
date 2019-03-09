@@ -10,7 +10,7 @@ from recognizers_number.number.parsers import BaseNumberParser
 from .constants import Constants, TimeTypeConstants
 from .extractors import DateTimeExtractor
 from .parsers import DateTimeParser, DateTimeParseResult
-from .utilities import Token, merge_all_tokens, DateTimeResolutionResult, DateTimeUtilityConfiguration, AgoLaterUtil, FormatUtil, RegExpUtility, AgoLaterMode
+from .utilities import Token, merge_all_tokens, DateTimeResolutionResult, DateTimeUtilityConfiguration, AgoLaterUtil, DateTimeFormatUtil, RegExpUtility, AgoLaterMode
 
 class DateTimeExtractorConfiguration(ABC):
     @property
@@ -65,7 +65,12 @@ class DateTimeExtractorConfiguration(ABC):
 
     @property
     @abstractmethod
-    def the_end_of_regex(self) -> Pattern:
+    def specific_end_of_regex(self) -> Pattern:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def unspecific_end_of_regex(self) -> Pattern:
         raise NotImplementedError
 
     @property
@@ -145,8 +150,8 @@ class BaseDateTimeExtractor(DateTimeExtractor):
                     begin = ers[i].start
                     end = ers[j].start + ers[j].length
                     tokens.append(Token(begin, end))
-                i = j + 1
-                continue
+                    i = j + 1
+                    continue
             i = j
 
         tokens = list(map(lambda x: self.verify_end_token(source, x), tokens))
@@ -216,15 +221,19 @@ class BaseDateTimeExtractor(DateTimeExtractor):
 
         for er in ers:
             before = source[:er.start]
-            before_match = regex.search(self.config.the_end_of_regex, before)
+            before_match = regex.search(self.config.specific_end_of_regex, before)
 
             if before_match is not None:
                 tokens.append(Token(before_match.start(), er.start + er.length))
             else:
                 after = source[er.start + er.length:]
-                after_match = regex.search(self.config.the_end_of_regex, after)
+                after_match = regex.search(self.config.specific_end_of_regex, after)
                 if after_match is not None:
                     tokens.append(Token(er.start, er.start + er.length + after_match.end()))
+
+        eod = regex.finditer(self.config.unspecific_end_of_regex, source)
+        for match in eod:
+            tokens.append(Token(match.start(), match.end()))
 
         return tokens
 
@@ -324,7 +333,12 @@ class DateTimeParserConfiguration:
 
     @property
     @abstractmethod
-    def the_end_of_regex(self) -> Pattern:
+    def specific_end_of_regex(self) -> Pattern:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def unspecific_end_of_regex(self) -> Pattern:
         raise NotImplementedError
 
     @property
@@ -394,8 +408,8 @@ class BaseDateTimeParser(DateTimeParser):
                 inner_result = self.parser_duration_with_ago_and_later(source_text, reference)
 
             if inner_result.success:
-                inner_result.future_resolution[TimeTypeConstants.DATETIME] = FormatUtil.format_date_time(inner_result.future_value)
-                inner_result.past_resolution[TimeTypeConstants.DATETIME] = FormatUtil.format_date_time(inner_result.past_value)
+                inner_result.future_resolution[TimeTypeConstants.DATETIME] = DateTimeFormatUtil.format_date_time(inner_result.future_value)
+                inner_result.past_resolution[TimeTypeConstants.DATETIME] = DateTimeFormatUtil.format_date_time(inner_result.past_value)
                 result.value = inner_result
                 result.timex_str = inner_result.timex if inner_result is not None else ''
                 result.resolution_str = ''
@@ -569,7 +583,7 @@ class BaseDateTimeParser(DateTimeParser):
 
         time_str = f'T{hour:02d}{time_str[3:]}'
 
-        result.timex = FormatUtil.format_date(date) + time_str
+        result.timex = DateTimeFormatUtil.format_date(date) + time_str
         result.future_value = datetime(date.year, date.month, date.day, hour, minute, second)
         result.past_value = datetime(date.year, date.month, date.day, hour, minute, second)
         result.success = True
@@ -578,6 +592,10 @@ class BaseDateTimeParser(DateTimeParser):
 
     def parse_special_time_of_date(self, source: str, reference: datetime) -> DateTimeResolutionResult:
         result = DateTimeResolutionResult()
+        result = self.parse_unspecific_time_of_date(source, reference)
+        if result.success is True:
+            return result
+
         ers = self.config.date_extractor.extract(source, reference)
 
         if len(ers) != 1:
@@ -586,15 +604,31 @@ class BaseDateTimeParser(DateTimeParser):
         er = next(iter(ers), None)
         before_str = source[0:er.start]
 
-        if regex.search(self.config.the_end_of_regex, before_str) is None:
+        if regex.search(self.config.specific_end_of_regex, before_str) is None:
             return result
 
         pr = self.config.date_parser.parse(er, reference)
-        result.timex = pr.timex_str + 'T23:59'
-        future_date = pr.value.future_value + timedelta(days=1) + timedelta(minutes=-1)
-        result.future_value = future_date
-        past_date = pr.value.past_value + timedelta(days=1) + timedelta(minutes=-1)
-        result.past_value = past_date
+        result.timex = pr.timex_str + 'T23:59:59'
+        future_date = pr.value.future_value
+        past_date = pr.value.past_value
+        result = self.resolve_end_of_day(pr.timex_str, future_date, past_date)
+
+        return result
+
+    def parse_unspecific_time_of_date(self, source: str, reference: datetime) -> DateTimeResolutionResult:
+        result = DateTimeResolutionResult()
+        eod = regex.search(self.config.unspecific_end_of_regex, source)
+        if eod is not None:
+            result = self.resolve_end_of_day(DateTimeFormatUtil.format_date(reference), reference, reference)
+
+        return result
+
+    def resolve_end_of_day(self, timex_prefix: str, future_date: datetime, past_date: datetime) -> DateTimeResolutionResult:
+        result = DateTimeResolutionResult()
+
+        result.timex = timex_prefix + 'T23:59:59'
+        result.future_value = datetime(future_date.year, future_date.month, future_date.day, 23, 59, 59, 0)
+        result.past_value = datetime(past_date.year, past_date.month, past_date.day, 23, 59, 59, 0)
         result.success = True
 
         return result

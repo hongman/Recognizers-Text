@@ -1,7 +1,7 @@
 import { IExtractor, ExtractResult, RegExpUtility, Match, StringUtility } from "@microsoft/recognizers-text";
 import { Constants, TimeTypeConstants } from "./constants";
 import { BaseNumberExtractor, BaseNumberParser } from "@microsoft/recognizers-text-number"
-import { Token, FormatUtil, DateTimeResolutionResult, DateUtils, DayOfWeek, StringMap } from "./utilities";
+import { Token, DateTimeFormatUtil, DateTimeResolutionResult, DateUtils, DayOfWeek, StringMap } from "./utilities";
 import { BaseDurationExtractor, BaseDurationParser } from "./baseDuration"
 import { IDateTimeParser, DateTimeParseResult } from "./parsers"
 import { BaseDateExtractor, BaseDateParser } from "./baseDate"
@@ -9,6 +9,7 @@ import { IDateTimeExtractor } from "./baseDateTime"
 
 export interface IDatePeriodExtractorConfiguration {
     simpleCasesRegexes: RegExp[]
+    illegalYearRegex: RegExp
     YearRegex: RegExp
     tillRegex: RegExp
     followedUnit: RegExp
@@ -60,11 +61,19 @@ export class BaseDatePeriodExtractor implements IDateTimeExtractor {
                     let yearStr = matchYear.groups('year').value;
                     if (StringUtility.isNullOrEmpty(yearStr)) {
                         let year = this.getYearFromText(matchYear);
-                        if (!(year >= 1500 && year <= 2100)) {
+                        if (!(year >= Constants.MinYearNum && year <= Constants.MaxYearNum)) {
                             addToken = false;
                         }
                     }
                 }
+
+                if (match.length === Constants.FourDigitsYearLength && RegExpUtility.isMatch(this.config.YearRegex, match.value) && this.infixBoundaryCheck(match, source)) {
+                    let substr = source.substr(match.index - 1, 6);
+                    if (RegExpUtility.isMatch(this.config.illegalYearRegex, substr)) {
+                        addToken = false;
+                    }
+                }
+
                 if (addToken) {
                     tokens.push(new Token(match.index, match.index + match.length));
                 }
@@ -222,6 +231,17 @@ export class BaseDatePeriodExtractor implements IDateTimeExtractor {
     private matchRegexInPrefix(source: string, match: Match): boolean {
         return (match && StringUtility.isNullOrWhitespace(source.substring(match.index + match.length)))
     }
+
+    private infixBoundaryCheck(match: Match, source: string): boolean {
+        let isMatchInfixOfSource = false;
+        if (match.index > 0 && match.index + match.length < source.length) {
+            if (source.substr(match.index, match.length) === match.value) {
+                isMatchInfixOfSource = true;
+            }
+        }
+
+        return isMatchInfixOfSource;
+    }
 }
 
 export interface IDatePeriodParserConfiguration {
@@ -252,6 +272,7 @@ export interface IDatePeriodParserConfiguration {
     restOfDateRegex: RegExp
     laterEarlyPeriodRegex: RegExp
     weekWithWeekDayRangeRegex: RegExp
+    unspecificEndOfRangeRegex: RegExp
     tokenBeforeDate: string
     dayOfMonth: ReadonlyMap<string, number>
     monthOfYear: ReadonlyMap<string, number>
@@ -335,11 +356,11 @@ export class BaseDatePeriodParser implements IDateTimeParser {
                 if (innerResult.futureValue && innerResult.pastValue) {
 
                     innerResult.futureResolution = {};
-                    innerResult.futureResolution[TimeTypeConstants.START_DATE] = FormatUtil.formatDate(innerResult.futureValue[0]);
-                    innerResult.futureResolution[TimeTypeConstants.END_DATE] = FormatUtil.formatDate(innerResult.futureValue[1]);
+                    innerResult.futureResolution[TimeTypeConstants.START_DATE] = DateTimeFormatUtil.formatDate(innerResult.futureValue[0]);
+                    innerResult.futureResolution[TimeTypeConstants.END_DATE] = DateTimeFormatUtil.formatDate(innerResult.futureValue[1]);
                     innerResult.pastResolution = {};
-                    innerResult.pastResolution[TimeTypeConstants.START_DATE] = FormatUtil.formatDate(innerResult.pastValue[0]);
-                    innerResult.pastResolution[TimeTypeConstants.END_DATE] = FormatUtil.formatDate(innerResult.pastValue[1]);
+                    innerResult.pastResolution[TimeTypeConstants.START_DATE] = DateTimeFormatUtil.formatDate(innerResult.pastValue[0]);
+                    innerResult.pastResolution[TimeTypeConstants.END_DATE] = DateTimeFormatUtil.formatDate(innerResult.pastValue[1]);
 
                 } else {
                     innerResult.futureResolution = {};
@@ -380,7 +401,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
         let endDate = DateUtils.addDays(DateUtils.addMonths(beginDate, 1), this.inclusiveEndPeriod ? -1 : 0);
         result.futureValue = [beginDate, endDate];
         result.pastValue = [beginDate, endDate];
-        result.timex = `${FormatUtil.toString(year, 4)}-${FormatUtil.toString(month + 1, 2)}`;
+        result.timex = `${DateTimeFormatUtil.toString(year, 4)}-${DateTimeFormatUtil.toString(month + 1, 2)}`;
         result.success = true;
         return result;
     }
@@ -434,8 +455,8 @@ export class BaseDatePeriodParser implements IDateTimeParser {
                 noYear = false;
             }
         }
-        let beginDateLuis = FormatUtil.luisDate(noYear ? -1 : year, month, beginDay);
-        let endDateLuis = FormatUtil.luisDate(noYear ? -1 : year, month, endDay);
+        let beginDateLuis = DateTimeFormatUtil.luisDate(noYear ? -1 : year, month, beginDay);
+        let endDateLuis = DateTimeFormatUtil.luisDate(noYear ? -1 : year, month, endDay);
 
         let futureYear = year;
         let pastYear = year;
@@ -456,6 +477,10 @@ export class BaseDatePeriodParser implements IDateTimeParser {
         return result;
     }
 
+    private isPresent(swift: number): boolean{
+        return swift == 0;
+    }
+
     protected parseOneWordPeriod(source: string, referenceDate: Date): DateTimeResolutionResult {
         let result = new DateTimeResolutionResult();
         let year = referenceDate.getFullYear();
@@ -469,14 +494,14 @@ export class BaseDatePeriodParser implements IDateTimeParser {
         let laterPrefix = false;
 
         if (this.config.isYearToDate(source)) {
-            result.timex = FormatUtil.toString(year, 4);
+            result.timex = DateTimeFormatUtil.toString(year, 4);
             result.futureValue = [DateUtils.safeCreateFromValue(DateUtils.minValue(), year, 0, 1), referenceDate];
             result.pastValue = [DateUtils.safeCreateFromValue(DateUtils.minValue(), year, 0, 1), referenceDate];
             result.success = true;
             return result;
         }
         if (this.config.isMonthToDate(source)) {
-            result.timex = `${FormatUtil.toString(year, 4)}-${FormatUtil.toString(month + 1, 2)}`;
+            result.timex = `${DateTimeFormatUtil.toString(year, 4)}-${DateTimeFormatUtil.toString(month + 1, 2)}`;
             result.futureValue = [DateUtils.safeCreateFromValue(DateUtils.minValue(), year, month, 1), referenceDate];
             result.pastValue = [DateUtils.safeCreateFromValue(DateUtils.minValue(), year, month, 1), referenceDate];
             result.success = true;
@@ -516,38 +541,55 @@ export class BaseDatePeriodParser implements IDateTimeParser {
             result.mod = Constants.MID_MOD;
         }
 
+        let monthStr = match.groups('month').value;
+        let swift = 0;
+        if (!StringUtility.isNullOrEmpty(monthStr)){
+            swift = this.config.getSwiftYear(trimedText);
+        }
+        else{
+            swift = this.config.getSwiftDayOrMonth(trimedText);
+        }
+
+        if (RegExpUtility.isMatch(this.config.unspecificEndOfRangeRegex, match.value))
+        {
+            latePrefix = true;
+            trimedText = match.value;
+            result.mod = Constants.LATE_MOD;
+        }
+
         if (match.groups("RelEarly").value)
         {
             earlierPrefix = true;
-            result.mod = null;
+            if (this.isPresent(swift))
+                result.mod = null;
         }
 
         if (match.groups("RelLate").value)
         {
             laterPrefix = true;
-            result.mod = null;
+            if (this.isPresent(swift))
+                result.mod = null;
         }
 
-        let monthStr = match.groups('month').value;
         if (!StringUtility.isNullOrEmpty(monthStr)) {
-            let swift = this.config.getSwiftYear(trimedText);
+            swift = this.config.getSwiftYear(trimedText);
             month = this.config.monthOfYear.get(monthStr) - 1;
             if (swift >= -1) {
-                result.timex = `${FormatUtil.toString(year + swift, 4)}-${FormatUtil.toString(month + 1, 2)}`;
+                result.timex = `${DateTimeFormatUtil.toString(year + swift, 4)}-${DateTimeFormatUtil.toString(month + 1, 2)}`;
                 year += swift;
                 futureYear = year;
                 pastYear = year;
             } else {
-                result.timex = `XXXX-${FormatUtil.toString(month + 1, 2)}`;
+                result.timex = `XXXX-${DateTimeFormatUtil.toString(month + 1, 2)}`;
                 if (month < referenceDate.getMonth()) futureYear++;
                 if (month >= referenceDate.getMonth()) pastYear--;
             }
         } else {
-            let swift = this.config.getSwiftDayOrMonth(trimedText);
+            swift = this.config.getSwiftDayOrMonth(trimedText);
             if (this.config.isWeekOnly(trimedText)) {
                 let monday = DateUtils.addDays(DateUtils.this(referenceDate, DayOfWeek.Monday), 7 * swift);
 
-                result.timex = `${FormatUtil.toString(monday.getFullYear(), 4)}-W${FormatUtil.toString(DateUtils.getWeekNumber(monday).weekNo, 2)}`;
+                result.timex = `${DateTimeFormatUtil.toString(monday.getFullYear(), 4)}-W${DateTimeFormatUtil.toString(DateUtils.getWeekNumber(monday).weekNo, 2)}`;
 
                 let beginDate = DateUtils.addDays(DateUtils.this(referenceDate, DayOfWeek.Monday), 7 * swift);
                 let endDate = this.inclusiveEndPeriod
@@ -585,7 +627,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
                 let beginDate = DateUtils.addDays(DateUtils.this(referenceDate, DayOfWeek.Saturday), 7 * swift);
                 let endDate = DateUtils.addDays(DateUtils.this(referenceDate, DayOfWeek.Sunday), (7 * swift) + (this.inclusiveEndPeriod ? 0 : 1));
 
-                result.timex = `${FormatUtil.toString(beginDate.getFullYear(), 4)}-W${FormatUtil.toString(DateUtils.getWeekNumber(beginDate).weekNo, 2)}-WE`;
+                result.timex = `${DateTimeFormatUtil.toString(beginDate.getFullYear(), 4)}-W${DateTimeFormatUtil.toString(DateUtils.getWeekNumber(beginDate).weekNo, 2)}-WE`;
                 result.futureValue = [beginDate, endDate];
                 result.pastValue = [beginDate, endDate];
                 result.success = true;
@@ -596,7 +638,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
                 tempDate.setMonth(referenceDate.getMonth() + swift);
                 month = tempDate.getMonth();
                 year = tempDate.getFullYear();
-                result.timex = `${FormatUtil.toString(year, 4)}-${FormatUtil.toString(month + 1, 2)}`;
+                result.timex = `${DateTimeFormatUtil.toString(year, 4)}-${DateTimeFormatUtil.toString(month + 1, 2)}`;
                 futureYear = year;
                 pastYear = year;
             } else if (this.config.isYearOnly(trimedText)) {
@@ -628,7 +670,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
                     }
                 }
 
-                result.timex = FormatUtil.toString(year, 4);
+                result.timex = DateTimeFormatUtil.toString(year, 4);
                 result.futureValue = [beginDate, endDate];
                 result.pastValue = [beginDate, endDate];
                 result.success = true;
@@ -719,6 +761,16 @@ export class BaseDatePeriodParser implements IDateTimeParser {
         let pastBegin = prBegin.value.pastValue;
         let pastEnd = prEnd.value.pastValue;
 
+        if (futureBegin > futureEnd) 
+        {
+            futureBegin = pastBegin;
+        }
+
+        if (pastEnd < pastBegin) 
+        {
+            pastEnd = futureEnd;
+        }
+
         result.subDateTimeEntities = prs;
         result.timex = `(${prBegin.timexStr},${prEnd.timexStr},P${DateUtils.diffDays(futureEnd, futureBegin)}D)`;
         result.futureValue = [futureBegin, futureEnd];
@@ -736,7 +788,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
         let year = Number.parseInt(match.value, 10);
         let beginDate = DateUtils.safeCreateFromValue(DateUtils.minValue(), year, 0, 1);
         let endDate = DateUtils.addDays(DateUtils.safeCreateFromValue(DateUtils.minValue(), year + 1, 0, 1), this.inclusiveEndPeriod ? -1 : 0);
-        result.timex = FormatUtil.toString(year, 4);
+        result.timex = DateTimeFormatUtil.toString(year, 4);
         result.futureValue = [beginDate, endDate];
         result.pastValue = [beginDate, endDate];
         result.success = true;
@@ -822,7 +874,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
 
         if (beginDate.getTime() !== endDate.getTime() || restNowSunday) {
             endDate = DateUtils.addDays(endDate, this.inclusiveEndPeriod ? -1 : 0);
-            result.timex = `(${FormatUtil.luisDateFromDate(beginDate)},${FormatUtil.luisDateFromDate(endDate)},${durationTimex})`;
+            result.timex = `(${DateTimeFormatUtil.luisDateFromDate(beginDate)},${DateTimeFormatUtil.luisDateFromDate(endDate)},${durationTimex})`;
             result.futureValue = [beginDate, endDate];
             result.pastValue = [beginDate, endDate];
             result.success = true;
@@ -895,8 +947,8 @@ export class BaseDatePeriodParser implements IDateTimeParser {
             }
         }
         result.timex = noYear ?
-            `XXXX-${FormatUtil.toString(month + 1, 2)}-W${FormatUtil.toString(cardinal, 2)}` :
-            `${FormatUtil.toString(year, 4)}-${FormatUtil.toString(month + 1, 2)}-W${FormatUtil.toString(cardinal, 2)}`;
+            `XXXX-${DateTimeFormatUtil.toString(month + 1, 2)}-W${DateTimeFormatUtil.toString(cardinal, 2)}` :
+            `${DateTimeFormatUtil.toString(year, 4)}-${DateTimeFormatUtil.toString(month + 1, 2)}-W${DateTimeFormatUtil.toString(cardinal, 2)}`;
         result.futureValue = [futureDate, DateUtils.addDays(futureDate, this.inclusiveEndPeriod ? 6 : 7)];
         result.pastValue = [pastDate, DateUtils.addDays(pastDate, this.inclusiveEndPeriod ? 6 : 7)];
         result.success = true;
@@ -931,7 +983,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
             targetWeekMonday = lastDayWeekMonday;
             weekNum = DateUtils.getWeekNumber(targetWeekMonday).weekNo;
 
-            result.timex = `${ FormatUtil.toString(year, 4) }-${ FormatUtil.toString(targetWeekMonday.getMonth() + 1, 2) }-W${ FormatUtil.toString(weekNum, 2) }`;
+            result.timex = `${ DateTimeFormatUtil.toString(year, 4) }-${ DateTimeFormatUtil.toString(targetWeekMonday.getMonth() + 1, 2) }-W${ DateTimeFormatUtil.toString(weekNum, 2) }`;
         } else {
             let cardinal = this.config.cardinalMap.get(cardinalStr);
 
@@ -944,7 +996,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
 
             targetWeekMonday = DateUtils.addDays(firstDayWeekMonday, 7 * (cardinal - 1));
             let targetWeekSunday = DateUtils.this(targetWeekMonday, DayOfWeek.Sunday);
-            result.timex = `${ FormatUtil.toString(year, 4) }-${ FormatUtil.toString(targetWeekSunday.getMonth() + 1, 2) }-W${ FormatUtil.toString(cardinal, 2) }`;
+            result.timex = `${ DateTimeFormatUtil.toString(year, 4) }-${ DateTimeFormatUtil.toString(targetWeekSunday.getMonth() + 1, 2) }-W${ DateTimeFormatUtil.toString(cardinal, 2) }`;
         }
 
         result.futureValue = [targetWeekMonday, DateUtils.addDays(targetWeekMonday, this.inclusiveEndPeriod ? 6 : 7)];
@@ -986,7 +1038,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
 
         result.futureValue = [beginDate, endDate];
         result.pastValue = [beginDate, endDate];
-        result.timex = `(${FormatUtil.luisDateFromDate(beginDate)},${FormatUtil.luisDateFromDate(endDate)},P6M)`;
+        result.timex = `(${DateTimeFormatUtil.luisDateFromDate(beginDate)},${DateTimeFormatUtil.luisDateFromDate(endDate)},P6M)`;
         result.success = true;
         return result;
     }
@@ -1049,7 +1101,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
             result.pastValue = [beginDate, endDate];
         }
 
-        result.timex = `(${FormatUtil.luisDateFromDate(beginDate)},${FormatUtil.luisDateFromDate(endDate)},P3M)`;
+        result.timex = `(${DateTimeFormatUtil.luisDateFromDate(beginDate)},${DateTimeFormatUtil.luisDateFromDate(endDate)},P3M)`;
         result.success = true;
         return result;
     }
@@ -1065,7 +1117,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
         let seasonStr = match.groups('seas').value;
         let season = this.config.seasonMap.get(seasonStr);
         if (swift >= -1 || !StringUtility.isNullOrEmpty(yearStr)) {
-            if (StringUtility.isNullOrEmpty(yearStr)) yearStr = FormatUtil.toString(year + swift, 4);
+            if (StringUtility.isNullOrEmpty(yearStr)) yearStr = DateTimeFormatUtil.toString(year + swift, 4);
             result.timex = `${yearStr}-${season}`;
         } else {
             result.timex = season;
@@ -1083,7 +1135,7 @@ export class BaseDatePeriodParser implements IDateTimeParser {
         let firstDay = DateUtils.safeCreateFromValue(DateUtils.minValue(), year, 0, 1);
         let firstWeekday = DateUtils.this(firstDay, DayOfWeek.Monday);
         let resultDate = DateUtils.addDays(firstWeekday, 7 * num);
-        result.timex = `${FormatUtil.toString(year, 4)}-W${FormatUtil.toString(num, 2)}`;
+        result.timex = `${DateTimeFormatUtil.toString(year, 4)}-W${DateTimeFormatUtil.toString(num, 2)}`;
         result.futureValue = [resultDate, DateUtils.addDays(resultDate, 7)];
         result.pastValue = [resultDate, DateUtils.addDays(resultDate, 7)];
         result.success = true;

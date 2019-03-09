@@ -7,10 +7,75 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
 {
     public class ItalianDateTimePeriodExtractorConfiguration : BaseOptionsConfiguration, IDateTimePeriodExtractorConfiguration
     {
+        public static readonly Regex SuffixRegex =
+            new Regex(DateTimeDefinitions.SuffixRegex, RegexOptions.Singleline);
 
-        public string TokenBeforeDate { get; }
+        public static readonly Regex AfterRegex =
+            new Regex(DateTimeDefinitions.AfterRegex, RegexOptions.Singleline);
 
-        public ItalianDateTimePeriodExtractorConfiguration(IOptionsConfiguration config) : base(config)
+        public static readonly Regex BeforeRegex =
+            new Regex(DateTimeDefinitions.BeforeRegex, RegexOptions.Singleline);
+
+        public static readonly Regex TimeNumberCombinedWithUnit =
+            new Regex(DateTimeDefinitions.TimeNumberCombinedWithUnit, RegexOptions.Singleline);
+
+        public static readonly Regex PeriodTimeOfDayWithDateRegex =
+            new Regex(DateTimeDefinitions.PeriodTimeOfDayWithDateRegex, RegexOptions.Singleline);
+
+        public static readonly Regex RelativeTimeUnitRegex =
+            new Regex(DateTimeDefinitions.RelativeTimeUnitRegex, RegexOptions.Singleline);
+
+        public static readonly Regex RestOfDateTimeRegex =
+            new Regex(DateTimeDefinitions.RestOfDateTimeRegex, RegexOptions.Singleline);
+
+        public static readonly Regex GeneralEndingRegex =
+            new Regex(DateTimeDefinitions.GeneralEndingRegex, RegexOptions.Singleline);
+
+        public static readonly Regex MiddlePauseRegex =
+            new Regex(DateTimeDefinitions.MiddlePauseRegex, RegexOptions.Singleline);
+
+        public static readonly Regex AmDescRegex =
+            new Regex(DateTimeDefinitions.AmDescRegex, RegexOptions.Singleline);
+
+        public static readonly Regex PmDescRegex =
+            new Regex(DateTimeDefinitions.PmDescRegex, RegexOptions.Singleline);
+
+        public static readonly Regex WithinNextPrefixRegex =
+          new Regex(DateTimeDefinitions.WithinNextPrefixRegex, RegexOptions.Singleline);
+
+        public static readonly Regex DateUnitRegex =
+            new Regex(DateTimeDefinitions.DateUnitRegex, RegexOptions.Singleline);
+
+        public static readonly Regex PrefixDayRegex =
+            new Regex(DateTimeDefinitions.PrefixDayRegex, RegexOptions.Singleline | RegexOptions.RightToLeft);
+
+        private static readonly Regex[] SimpleCases =
+        {
+            ItalianTimePeriodExtractorConfiguration.PureNumFromTo,
+            ItalianTimePeriodExtractorConfiguration.PureNumBetweenAnd,
+            ItalianTimePeriodExtractorConfiguration.SpecificTimeOfDayRegex,
+        };
+
+        private static readonly Regex FromRegex =
+            new Regex(DateTimeDefinitions.FromRegex2, RegexOptions.Singleline);
+
+        private static readonly Regex ConnectorAndRegex =
+            new Regex(DateTimeDefinitions.ConnectorAndRegex, RegexOptions.Singleline);
+
+        private static readonly Regex PeriodTimeOfDayRegex =
+            new Regex(DateTimeDefinitions.PeriodTimeOfDayRegex, RegexOptions.Singleline);
+
+        private static readonly Regex PeriodSpecificTimeOfDayRegex =
+            new Regex(DateTimeDefinitions.PeriodSpecificTimeOfDayRegex, RegexOptions.Singleline);
+
+        private static readonly Regex TimeTimeUnitRegex =
+            new Regex(DateTimeDefinitions.TimeUnitRegex, RegexOptions.Singleline);
+
+        private static readonly Regex TimeFollowedUnit =
+            new Regex(DateTimeDefinitions.TimeFollowedUnit, RegexOptions.Singleline);
+
+        public ItalianDateTimePeriodExtractorConfiguration(IOptionsConfiguration config)
+            : base(config)
         {
             TokenBeforeDate = DateTimeDefinitions.TokenBeforeDate;
 
@@ -22,82 +87,15 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
             TimePeriodExtractor = new BaseTimePeriodExtractor(new ItalianTimePeriodExtractorConfiguration(this));
         }
 
-        private static readonly Regex[] SimpleCases =
-        {
-            ItalianTimePeriodExtractorConfiguration.PureNumFromTo,
-            ItalianTimePeriodExtractorConfiguration.PureNumBetweenAnd,
-            ItalianTimePeriodExtractorConfiguration.SpecificTimeOfDayRegex
-        };
-
-        private static readonly Regex FromRegex = 
-            new Regex(DateTimeDefinitions.FromRegex2, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        private static readonly Regex ConnectorAndRegex = 
-            new Regex(DateTimeDefinitions.ConnectorAndRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex SuffixRegex =
-            new Regex(DateTimeDefinitions.SuffixRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex AfterRegex =
-            new Regex(DateTimeDefinitions.AfterRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex BeforeRegex =
-            new Regex(DateTimeDefinitions.BeforeRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
         public IEnumerable<Regex> SimpleCasesRegex => SimpleCases;
 
         public Regex PrepositionRegex => ItalianTimePeriodExtractorConfiguration.PrepositionRegex;
 
         public Regex TillRegex => ItalianTimePeriodExtractorConfiguration.TillRegex;
 
-        private static readonly Regex PeriodTimeOfDayRegex =
-            new Regex(DateTimeDefinitions.PeriodTimeOfDayRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        private static readonly Regex PeriodSpecificTimeOfDayRegex =
-            new Regex(DateTimeDefinitions.PeriodSpecificTimeOfDayRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
         public Regex TimeOfDayRegex => PeriodTimeOfDayRegex;
 
         public Regex SpecificTimeOfDayRegex => PeriodSpecificTimeOfDayRegex;
-
-        private static readonly Regex TimeTimeUnitRegex =
-            new Regex(DateTimeDefinitions.TimeUnitRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        private static readonly Regex TimeFollowedUnit =
-            new Regex(DateTimeDefinitions.TimeFollowedUnit, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex TimeNumberCombinedWithUnit =
-            new Regex(DateTimeDefinitions.TimeNumberCombinedWithUnit, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex PeriodTimeOfDayWithDateRegex =
-            new Regex(DateTimeDefinitions.PeriodTimeOfDayWithDateRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex RelativeTimeUnitRegex =
-            new Regex(DateTimeDefinitions.RelativeTimeUnitRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex RestOfDateTimeRegex =
-            new Regex(DateTimeDefinitions.RestOfDateTimeRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex GeneralEndingRegex =
-            new Regex(DateTimeDefinitions.GeneralEndingRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex MiddlePauseRegex =
-            new Regex(DateTimeDefinitions.MiddlePauseRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex AmDescRegex =
-            new Regex(DateTimeDefinitions.AmDescRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex PmDescRegex =
-            new Regex(DateTimeDefinitions.PmDescRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex WithinNextPrefixRegex =
-          new Regex(DateTimeDefinitions.WithinNextPrefixRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex DateUnitRegex =
-            new Regex(DateTimeDefinitions.DateUnitRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex PrefixDayRegex =
-            new Regex(DateTimeDefinitions.PrefixDayRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.RightToLeft);
 
         public Regex FollowedUnit => TimeFollowedUnit;
 
@@ -109,13 +107,13 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
 
         Regex IDateTimePeriodExtractorConfiguration.RestOfDateTimeRegex => RestOfDateTimeRegex;
 
-        public Regex PastPrefixRegex => ItalianDatePeriodExtractorConfiguration.PastPrefixRegex; // Note: FR 'past' i.e 'dernier' is a suffix following after, however interface enforces 'prefix' nomenclature
+        public Regex PreviousPrefixRegex => ItalianDatePeriodExtractorConfiguration.PastPrefixRegex; // Note: FR 'past' i.e 'dernier' is a suffix following after, however interface enforces 'prefix' nomenclature
 
         public Regex NextPrefixRegex => ItalianDatePeriodExtractorConfiguration.NextPrefixRegex; // Note: FR 'next' i.e 'prochain' is a suffix following after, i.e 'lundi prochain', however 'prefix' is enforced by interface
 
         public Regex FutureSuffixRegex => ItalianDatePeriodExtractorConfiguration.FutureSuffixRegex;
 
-        public Regex WeekDayRegex => new Regex(DateTimeDefinitions.WeekDayRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public Regex WeekDayRegex => new Regex(DateTimeDefinitions.WeekDayRegex, RegexOptions.Singleline);
 
         Regex IDateTimePeriodExtractorConfiguration.PeriodTimeOfDayWithDateRegex => PeriodTimeOfDayWithDateRegex;
 
@@ -128,6 +126,8 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
         Regex IDateTimePeriodExtractorConfiguration.PmDescRegex => PmDescRegex;
 
         Regex IDateTimePeriodExtractorConfiguration.WithinNextPrefixRegex => WithinNextPrefixRegex;
+
+        public string TokenBeforeDate { get; }
 
         public IExtractor CardinalExtractor { get; }
 
@@ -159,6 +159,7 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
             {
                 index = fromMatch.Index;
             }
+
             return fromMatch.Success;
         }
 
@@ -170,6 +171,7 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
             {
                 index = beforeMatch.Index;
             }
+
             return beforeMatch.Success;
         }
 

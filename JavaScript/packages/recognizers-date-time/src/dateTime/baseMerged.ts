@@ -2,7 +2,7 @@ import { IExtractor, ExtractResult } from "@microsoft/recognizers-text";
 import { Constants, TimeTypeConstants } from "./constants";
 import { RegExpUtility, StringUtility, BaseNumberExtractor } from "@microsoft/recognizers-text-number"
 import { IDateTimeParser, DateTimeParseResult } from "./parsers"
-import { FormatUtil, DateUtils, DateTimeResolutionResult, Token, StringMap } from "./utilities"
+import { DateTimeFormatUtil, DateUtils, DateTimeResolutionResult, Token, StringMap } from "./utilities"
 import { BaseDateExtractor, BaseDateParser } from "./baseDate"
 import { BaseTimeExtractor, BaseTimeParser } from "./baseTime"
 import { BaseDatePeriodExtractor, BaseDatePeriodParser } from "./baseDatePeriod"
@@ -140,7 +140,7 @@ export class BaseMergedExtractor implements IDateTimeExtractor {
                     }
                 }
 
-                // insert at the first overlap occurence to keep the order
+                // insert at the first overlap occurrence to keep the order
                 tempDst.splice(firstIndex, 0, value);
                 destination.length = 0;
                 destination.push.apply(destination, tempDst);
@@ -224,8 +224,8 @@ export class BaseMergedParser implements IDateTimeParser {
     protected readonly config: IMergedParserConfiguration;
     private readonly options: DateTimeOptions;
 
-    private readonly dateMinValue = FormatUtil.formatDate(DateUtils.minValue());
-    private readonly dateTimeMinValue = FormatUtil.formatDateTime(DateUtils.minValue());
+    private readonly dateMinValue = DateTimeFormatUtil.formatDate(DateUtils.minValue());
+    private readonly dateTimeMinValue = DateTimeFormatUtil.formatDateTime(DateUtils.minValue());
 
     constructor(config: IMergedParserConfiguration, options: DateTimeOptions) {
         this.config = config;
@@ -396,6 +396,7 @@ export class BaseMergedParser implements IDateTimeParser {
             let subEntities = slot.value.subDateTimeEntities;
             for (let subEntity of subEntities) {
                 let result = subEntity;
+                result.start += slot.start;
                 results.push(...this.dateTimeResolutionForSplit(result));
             }
         }
@@ -565,16 +566,29 @@ export class BaseMergedParser implements IDateTimeParser {
         let start = resolutions[startType];
         let end = resolutions[endType];
         if (!StringUtility.isNullOrEmpty(mod)) {
+            // For the 'before' mod
+            // 1. Cases like "Before December", the start of the period should be the end of the new period, not the start
+            // 2. Cases like "More than 3 days before today", the date point should be the end of the new period
             if (mod === TimeTypeConstants.beforeMod) {
-                result[TimeTypeConstants.END] = start;
+                if (!StringUtility.isNullOrEmpty(start) && !StringUtility.isNullOrEmpty(end)) {
+                    result[TimeTypeConstants.END] = start;
+                } else {
+                    result[TimeTypeConstants.END] = end;
+                }
                 return;
             }
 
+            // For the 'after' mod
+            // 1. Cases like "After January". the end of the period should be the start of the new period, not the end
+            // 2. Cases like "More than 3 days after today", the date point should be the start of the new period
             if (mod === TimeTypeConstants.afterMod) {
-                result[TimeTypeConstants.START] = end;
+                if (!StringUtility.isNullOrEmpty(start) && !StringUtility.isNullOrEmpty(end)) {
+                    result[TimeTypeConstants.START] = end;
+                } else {
+                    result[TimeTypeConstants.START] = start;
+                }
                 return;
             }
-
             if (mod === TimeTypeConstants.sinceMod) {
                 result[TimeTypeConstants.START] = start;
                 return;
@@ -604,34 +618,34 @@ export class BaseMergedParser implements IDateTimeParser {
         let resolutionPm: StringMap = {};
         switch (valuesMap.get('type')) {
             case Constants.SYS_DATETIME_TIME:
-                resolutionPm[TimeTypeConstants.VALUE] = FormatUtil.toPm(resolution[TimeTypeConstants.VALUE]);
-                resolutionPm['timex'] = FormatUtil.toPm(timex);
+                resolutionPm[TimeTypeConstants.VALUE] = DateTimeFormatUtil.toPm(resolution[TimeTypeConstants.VALUE]);
+                resolutionPm['timex'] = DateTimeFormatUtil.toPm(timex);
                 break;
 
             case Constants.SYS_DATETIME_DATETIME:
                 let splitValue = resolution[TimeTypeConstants.VALUE].split(' ');
-                resolutionPm[TimeTypeConstants.VALUE] = `${splitValue[0]} ${FormatUtil.toPm(splitValue[1])}`;
-                resolutionPm['timex'] = FormatUtil.allStringToPm(timex);
+                resolutionPm[TimeTypeConstants.VALUE] = `${splitValue[0]} ${DateTimeFormatUtil.toPm(splitValue[1])}`;
+                resolutionPm['timex'] = DateTimeFormatUtil.allStringToPm(timex);
                 break;
 
             case Constants.SYS_DATETIME_TIMEPERIOD:
-                if (resolution.hasOwnProperty(TimeTypeConstants.START)) resolutionPm[TimeTypeConstants.START] = FormatUtil.toPm(resolution[TimeTypeConstants.START]);
-                if (resolution.hasOwnProperty(TimeTypeConstants.END)) resolutionPm[TimeTypeConstants.END] = FormatUtil.toPm(resolution[TimeTypeConstants.END]);
-                resolutionPm['timex'] = FormatUtil.allStringToPm(timex);
+                if (resolution.hasOwnProperty(TimeTypeConstants.START)) resolutionPm[TimeTypeConstants.START] = DateTimeFormatUtil.toPm(resolution[TimeTypeConstants.START]);
+                if (resolution.hasOwnProperty(TimeTypeConstants.END)) resolutionPm[TimeTypeConstants.END] = DateTimeFormatUtil.toPm(resolution[TimeTypeConstants.END]);
+                resolutionPm['timex'] = DateTimeFormatUtil.allStringToPm(timex);
                 break;
 
             case Constants.SYS_DATETIME_DATETIMEPERIOD:
                 if (resolution.hasOwnProperty(TimeTypeConstants.START)) {
                     let splitValue = resolution[TimeTypeConstants.START].split(' ');
-                    resolutionPm[TimeTypeConstants.START] = `${splitValue[0]} ${FormatUtil.toPm(splitValue[1])}`;
+                    resolutionPm[TimeTypeConstants.START] = `${splitValue[0]} ${DateTimeFormatUtil.toPm(splitValue[1])}`;
                 }
 
                 if (resolution.hasOwnProperty(TimeTypeConstants.END)) {
                     let splitValue = resolution[TimeTypeConstants.END].split(' ');
-                    resolutionPm[TimeTypeConstants.END] = `${splitValue[0]} ${FormatUtil.toPm(splitValue[1])}`;
+                    resolutionPm[TimeTypeConstants.END] = `${splitValue[0]} ${DateTimeFormatUtil.toPm(splitValue[1])}`;
                 }
 
-                resolutionPm['timex'] = FormatUtil.allStringToPm(timex);
+                resolutionPm['timex'] = DateTimeFormatUtil.allStringToPm(timex);
                 break;
         }
 

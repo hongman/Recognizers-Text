@@ -8,9 +8,10 @@ using Microsoft.Recognizers.Definitions.Japanese;
 
 namespace Microsoft.Recognizers.Text.Number.Japanese
 {
-    public class JapaneseNumberParserConfiguration : INumberParserConfiguration, ICJKNumberParserConfiguration
+    public class JapaneseNumberParserConfiguration : BaseNumberParserConfiguration, ICJKNumberParserConfiguration
     {
-        public JapaneseNumberParserConfiguration() : this(new CultureInfo(Culture.Japanese))
+        public JapaneseNumberParserConfiguration()
+            : this(new CultureInfo(Culture.Japanese))
         {
         }
 
@@ -32,6 +33,7 @@ namespace Microsoft.Recognizers.Text.Number.Japanese
 
             CardinalNumberMap = new Dictionary<string, long>().ToImmutableDictionary();
             OrdinalNumberMap = new Dictionary<string, long>().ToImmutableDictionary();
+            RelativeReferenceMap = NumbersDefinitions.RelativeReferenceMap.ToImmutableDictionary();
             RoundNumberMap = NumbersDefinitions.RoundNumberMap.ToImmutableDictionary();
             ZeroToNineMap = NumbersDefinitions.ZeroToNineMap.ToImmutableDictionary();
             FullToHalfMap = NumbersDefinitions.FullToHalfMap.ToImmutableDictionary();
@@ -40,38 +42,20 @@ namespace Microsoft.Recognizers.Text.Number.Japanese
             RoundDirectList = NumbersDefinitions.RoundDirectList.ToImmutableList();
 
             HalfADozenRegex = null;
-            DigitalNumberRegex = new Regex(NumbersDefinitions.DigitalNumberRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            DozenRegex = new Regex(NumbersDefinitions.DozenRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            PointRegex = new Regex(NumbersDefinitions.PointRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            DigitNumRegex = new Regex(NumbersDefinitions.DigitNumRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            DoubleAndRoundRegex = new Regex(NumbersDefinitions.DoubleAndRoundRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            FracSplitRegex = new Regex(NumbersDefinitions.FracSplitRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            NegativeNumberSignRegex = new Regex(NumbersDefinitions.NegativeNumberSignRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            SpeGetNumberRegex = new Regex(NumbersDefinitions.SpeGetNumberRegex, RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            PercentageRegex = new Regex(NumbersDefinitions.PercentageRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            PairRegex = new Regex(NumbersDefinitions.PairRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            RoundNumberIntegerRegex = new Regex(NumbersDefinitions.RoundNumberIntegerRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            // @TODO Change init to follow design in other languages
+            DigitalNumberRegex = new Regex(NumbersDefinitions.DigitalNumberRegex, RegexOptions.Singleline);
+            DozenRegex = new Regex(NumbersDefinitions.DozenRegex, RegexOptions.Singleline);
+            PointRegex = new Regex(NumbersDefinitions.PointRegex, RegexOptions.Singleline);
+            DigitNumRegex = new Regex(NumbersDefinitions.DigitNumRegex, RegexOptions.Singleline);
+            DoubleAndRoundRegex = new Regex(NumbersDefinitions.DoubleAndRoundRegex, RegexOptions.Singleline);
+            FracSplitRegex = new Regex(NumbersDefinitions.FracSplitRegex, RegexOptions.Singleline);
+            NegativeNumberSignRegex = new Regex(NumbersDefinitions.NegativeNumberSignRegex, RegexOptions.Singleline);
+            SpeGetNumberRegex = new Regex(NumbersDefinitions.SpeGetNumberRegex, RegexOptions.Singleline);
+            PercentageRegex = new Regex(NumbersDefinitions.PercentageRegex, RegexOptions.Singleline);
+            PairRegex = new Regex(NumbersDefinitions.PairRegex, RegexOptions.Singleline);
+            RoundNumberIntegerRegex = new Regex(NumbersDefinitions.RoundNumberIntegerRegex, RegexOptions.Singleline);
         }
-
-        public NumberOptions Options { get; }
-
-        public CultureInfo CultureInfo { get; private set; }
-
-        public char DecimalSeparatorChar { get; private set; }
-
-        public Regex DigitalNumberRegex { get; private set; }
-
-        public Regex FractionPrepositionRegex { get; }
-
-        public string FractionMarkerToken { get; private set; }
-
-        public Regex HalfADozenRegex { get; private set; }
-
-        public string HalfADozenText { get; private set; }
-
-        public string LangMarker { get; private set; }
-
-        public char NonDecimalSeparatorChar { get; private set; }
 
         public string NonDecimalSeparatorText { get; private set; }
 
@@ -85,8 +69,6 @@ namespace Microsoft.Recognizers.Text.Number.Japanese
 
         public Regex FracSplitRegex { get; private set; }
 
-        public Regex NegativeNumberSignRegex { get; private set; }
-
         public Regex PointRegex { get; private set; }
 
         public Regex SpeGetNumberRegex { get; private set; }
@@ -94,12 +76,6 @@ namespace Microsoft.Recognizers.Text.Number.Japanese
         public Regex PairRegex { get; private set; }
 
         public Regex RoundNumberIntegerRegex { get; private set; }
-
-        public ImmutableDictionary<string, long> OrdinalNumberMap { get; private set; }
-
-        public ImmutableDictionary<string, long> CardinalNumberMap { get; private set; }
-
-        public ImmutableDictionary<string, long> RoundNumberMap { get; private set; }
 
         public ImmutableDictionary<char, double> ZeroToNineMap { get; private set; }
 
@@ -113,22 +89,12 @@ namespace Microsoft.Recognizers.Text.Number.Japanese
 
         public ImmutableList<char> RoundDirectList { get; private set; }
 
-        public string WordSeparatorToken { get; private set; }
-
-        public IEnumerable<string> WrittenDecimalSeparatorTexts { get; private set; }
-
-        public IEnumerable<string> WrittenGroupSeparatorTexts { get; private set; }
-
-        public IEnumerable<string> WrittenIntegerSeparatorTexts { get; private set; }
-
-        public IEnumerable<string> WrittenFractionSeparatorTexts { get; private set; }
-
-        public IEnumerable<string> NormalizeTokenSet(IEnumerable<string> tokens, ParseResult context)
+        public override IEnumerable<string> NormalizeTokenSet(IEnumerable<string> tokens, ParseResult context)
         {
             return tokens;
         }
 
-        public long ResolveCompositeNumber(string numberStr)
+        public override long ResolveCompositeNumber(string numberStr)
         {
             return 0;
         }

@@ -1,13 +1,13 @@
 ﻿using System;
-using DateObject = System.DateTime;
-
 using Microsoft.Recognizers.Definitions.Spanish;
+using DateObject = System.DateTime;
 
 namespace Microsoft.Recognizers.Text.DateTime.Spanish
 {
     public class DateTimePeriodParser : BaseDateTimePeriodParser
     {
-        public DateTimePeriodParser(IDateTimePeriodParserConfiguration configuration) : base(configuration)
+        public DateTimePeriodParser(IDateTimePeriodParserConfiguration configuration)
+            : base(configuration)
         {
         }
 
@@ -22,18 +22,20 @@ namespace Microsoft.Recognizers.Text.DateTime.Spanish
                 return ret;
             }
 
-            var match = this.Config.SpecificTimeOfDayRegex.Match(trimmedText);
-            if (match.Success && match.Index == 0 && match.Length == trimmedText.Length)
+            var exactMatch = this.Config.SpecificTimeOfDayRegex.MatchExact(trimmedText, trim: true);
+
+            if (exactMatch.Success)
             {
                 var swift = this.Config.GetSwiftPrefix(trimmedText);
 
                 var date = referenceTime.AddDays(swift).Date;
                 int day = date.Day, month = date.Month, year = date.Year;
 
-                ret.Timex = FormatUtil.FormatDate(date) + timeStr;
+                ret.Timex = DateTimeFormatUtil.FormatDate(date) + timeStr;
                 ret.FutureValue =
                     ret.PastValue =
-                        new Tuple<DateObject, DateObject>(DateObject.MinValue.SafeCreateFromValue(year, month, day, beginHour, 0, 0),
+                        new Tuple<DateObject, DateObject>(
+                            DateObject.MinValue.SafeCreateFromValue(year, month, day, beginHour, 0, 0),
                             DateObject.MinValue.SafeCreateFromValue(year, month, day, endHour, endMin, endMin));
                 ret.Success = true;
                 return ret;
@@ -44,11 +46,12 @@ namespace Microsoft.Recognizers.Text.DateTime.Spanish
             // handle Date followed by morning, afternoon
             // Add handling code to handle morning, afternoon followed by Date
             // Add handling code to handle early/late morning, afternoon
-            match = this.Config.TimeOfDayRegex.Match(trimmedText.Substring(startIndex));
+            var match = this.Config.TimeOfDayRegex.Match(trimmedText.Substring(startIndex));
             if (match.Success)
             {
                 var beforeStr = trimmedText.Substring(0, match.Index + startIndex).Trim();
                 var ers = this.Config.DateExtractor.Extract(beforeStr, referenceTime);
+
                 if (ers.Count == 0)
                 {
                     return ret;

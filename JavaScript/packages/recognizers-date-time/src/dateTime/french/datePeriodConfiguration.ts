@@ -5,12 +5,14 @@ import { BaseDateExtractor, BaseDateParser } from "../baseDate";
 import { BaseDurationExtractor, BaseDurationParser } from "../baseDuration";
 import { FrenchDateExtractorConfiguration } from "./dateConfiguration";
 import { FrenchDurationExtractorConfiguration } from "./durationConfiguration";
+import { BaseDateTime } from "../../resources/baseDateTime";
 import { FrenchDateTime } from "../../resources/frenchDateTime";
 import { ICommonDateTimeParserConfiguration } from "../parsers";
 import { IDateTimeExtractor } from "../baseDateTime"
 
 export class FrenchDatePeriodExtractorConfiguration implements IDatePeriodExtractorConfiguration {
     readonly simpleCasesRegexes: RegExp[];
+    readonly illegalYearRegex: RegExp;
     readonly YearRegex: RegExp;
     readonly tillRegex: RegExp;
     readonly followedUnit: RegExp;
@@ -55,6 +57,7 @@ export class FrenchDatePeriodExtractorConfiguration implements IDatePeriodExtrac
             RegExpUtility.getSafeRegExp(FrenchDateTime.LaterEarlyPeriodRegex),
             RegExpUtility.getSafeRegExp(FrenchDateTime.WeekWithWeekDayRangeRegex)
         ];
+        this.illegalYearRegex = RegExpUtility.getSafeRegExp(BaseDateTime.IllegalYearRegex);
         this.YearRegex = RegExpUtility.getSafeRegExp(FrenchDateTime.YearRegex);
         this.tillRegex = RegExpUtility.getSafeRegExp(FrenchDateTime.TillRegex);
         this.followedUnit = RegExpUtility.getSafeRegExp(FrenchDateTime.FollowedDateUnit);
@@ -117,6 +120,7 @@ export class FrenchDatePeriodParserConfiguration implements IDatePeriodParserCon
     readonly monthOfRegex: RegExp;
     readonly whichWeekRegex: RegExp;
     readonly restOfDateRegex: RegExp;
+    readonly unspecificEndOfRangeRegex: RegExp;
     readonly tokenBeforeDate: string;
     readonly dayOfMonth: ReadonlyMap<string, number>;
     readonly monthOfYear: ReadonlyMap<string, number>;
@@ -125,7 +129,7 @@ export class FrenchDatePeriodParserConfiguration implements IDatePeriodParserCon
     readonly unitMap: ReadonlyMap<string, string>;
 
     readonly nextPrefixRegex: RegExp;
-    readonly pastPrefixRegex: RegExp;
+    readonly previousPrefixRegex: RegExp;
     readonly thisPrefixRegex: RegExp;
     readonly numberCombinedWithUnit: RegExp;
     readonly laterEarlyPeriodRegex: RegExp;
@@ -164,9 +168,10 @@ export class FrenchDatePeriodParserConfiguration implements IDatePeriodParserCon
         this.weekOfRegex = RegExpUtility.getSafeRegExp(FrenchDateTime.WeekOfRegex);
         this.monthOfRegex = RegExpUtility.getSafeRegExp(FrenchDateTime.MonthOfRegex);
         this.restOfDateRegex = RegExpUtility.getSafeRegExp(FrenchDateTime.RestOfDateRegex);
+        this.unspecificEndOfRangeRegex = RegExpUtility.getSafeRegExp(FrenchDateTime.UnspecificEndOfRangeRegex);
 
         this.nextPrefixRegex = RegExpUtility.getSafeRegExp("(prochain|prochaine)\b");
-        this.pastPrefixRegex = RegExpUtility.getSafeRegExp("(dernier)\b");
+        this.previousPrefixRegex = RegExpUtility.getSafeRegExp("(dernier)\b");
         this.thisPrefixRegex = RegExpUtility.getSafeRegExp("(ce|cette)\b");
 
         this.inConnectorRegex = config.utilityConfiguration.inConnectorRegex;
@@ -218,54 +223,43 @@ export class FrenchDatePeriodParserConfiguration implements IDatePeriodParserCon
 
     isFuture(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return (trimedText.startsWith("cette") ||
-            trimedText.endsWith("prochaine") || 
-            trimedText.endsWith("prochain"));
+        return FrenchDateTime.FutureStartTerms.some(o => trimedText.startsWith(o)) ||
+            FrenchDateTime.FutureEndTerms.some(o => trimedText.endsWith(o));
     }
 
     isYearToDate(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return (trimedText === "année à ce jour" || 
-            trimedText === "an à ce jour");
+        return FrenchDateTime.YearToDateTerms.some(o => trimedText === o);
     }
 
     isMonthToDate(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return trimedText === "mois à ce jour";
+        return FrenchDateTime.MonthToDateTerms.some(o => trimedText === o);
     }
 
     isWeekOnly(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return (trimedText.endsWith("semaine") && 
-            !trimedText.endsWith("fin de semaine"));
+        return FrenchDateTime.WeekTerms.some(o => trimedText.endsWith(o)) &&
+            !FrenchDateTime.WeekendTerms.some(o => trimedText.endsWith(o));
     }
 
     isWeekend(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return (trimedText.endsWith("fin de semaine") || 
-            trimedText.endsWith("le weekend"));
+        return FrenchDateTime.WeekendTerms.some(o => trimedText.endsWith(o));
     }
 
     isMonthOnly(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return trimedText.endsWith("mois");
+        return FrenchDateTime.MonthTerms.some(o => trimedText.endsWith(o));
     }
 
     isYearOnly(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return (trimedText.endsWith("années") || 
-            trimedText.endsWith("ans") || 
-            (trimedText.endsWith("l'annees") || 
-            trimedText.endsWith("l'annee"))
-        );
+        return FrenchDateTime.YearTerms.some(o => trimedText.endsWith(o));
     }
 
     isLastCardinal(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return (trimedText === "dernières" ||
-            trimedText === "dernière" ||
-            trimedText === "dernieres" || 
-            trimedText === "derniere"||
-            trimedText === "dernier");
+        return FrenchDateTime.LastCardinalTerms.some(o => trimedText === o);
     }
 }

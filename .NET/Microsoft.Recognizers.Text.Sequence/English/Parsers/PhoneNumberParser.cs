@@ -18,45 +18,49 @@ namespace Microsoft.Recognizers.Text.Sequence.English
         private static double continueDigitDeductionScore = 10;
         private static double tailSameDeductionScore = 10;
         private static double continueFormatIndicatorDeductionScore = 20;
+        private static double wrongFormatDeductionScore = 20;
         private static int maxFormatIndicatorNum = 3;
         private static int maxLengthAwardNum = 3;
         private static int tailSameLimit = 2;
         private static int phoneNumberLengthBase = 8;
         private static int pureDigitLengthLimit = 11;
+
+        // @TODO move regexes to base resource files
+        private static string completeBracketRegex = @"\(.*\)";
+        private static string singleBracketRegex = @"\(|\)";
         private static string tailSameDigitRegex = @"([\d])\1{2,10}$";
         private static string pureDigitRegex = @"^\d*$";
         private static string continueDigitRegex = @"\d{5}\d*";
         private static string digitRegex = @"\d";
 
+        private static readonly Regex CountryCodeRegex = new Regex(BasePhoneNumbers.CountryCodeRegex);
+        private static readonly Regex AreaCodeRegex = new Regex(BasePhoneNumbers.AreaCodeIndicatorRegex);
+        private static readonly Regex FormatIndicatorRegex = new Regex(BasePhoneNumbers.FormatIndicatorRegex);
 
-        public PhoneNumberParser()
-        {
-
-        }
-
-        double ScorePhoneNumber(string phoneNumberText)
+        public double ScorePhoneNumber(string phoneNumberText)
         {
             double score = baseScore;
 
-            Regex countryCodeRegex = new Regex(BasePhoneNumbers.CountryCodeRegex);
-            Regex areaCodeRegex = new Regex(BasePhoneNumbers.AreaCodeIndicatorRegex);
-            Regex formatIndicatorRegex = new Regex(BasePhoneNumbers.FormatIndicatorRegex);
-
-            // Country code score or area code score 
-            score += countryCodeRegex.IsMatch(phoneNumberText) ?
-                                    countryCodeAward : areaCodeRegex.IsMatch(phoneNumberText) ? areaCodeAward : 0;
+            // Country code score or area code score
+            score += CountryCodeRegex.IsMatch(phoneNumberText) ?
+                                    countryCodeAward : AreaCodeRegex.IsMatch(phoneNumberText) ? areaCodeAward : 0;
 
             // Formatted score
-            if (formatIndicatorRegex.IsMatch(phoneNumberText))
+            if (FormatIndicatorRegex.IsMatch(phoneNumberText))
             {
-                var formatMatches = formatIndicatorRegex.Matches(phoneNumberText);
+                var formatMatches = FormatIndicatorRegex.Matches(phoneNumberText);
                 int formatIndicatorCount = formatMatches.Count;
                 score += Math.Min(formatIndicatorCount, maxFormatIndicatorNum) * formattedAward;
                 score -= formatMatches.Cast<Match>().Any(o => o.Value.Length > 1) ? continueFormatIndicatorDeductionScore : 0;
+                if (Regex.IsMatch(phoneNumberText, singleBracketRegex) &&
+                    !Regex.IsMatch(phoneNumberText, completeBracketRegex))
+                {
+                    score -= wrongFormatDeductionScore;
+                }
             }
 
             // Length score
-            score += Math.Min((Regex.Matches(phoneNumberText, digitRegex).Count - phoneNumberLengthBase), maxLengthAwardNum) * lengthAward;
+            score += Math.Min(Regex.Matches(phoneNumberText, digitRegex).Count - phoneNumberLengthBase, maxLengthAwardNum) * lengthAward;
 
             // Same tailing digit deduction
             if (Regex.IsMatch(phoneNumberText, tailSameDigitRegex))
@@ -79,7 +83,7 @@ namespace Microsoft.Recognizers.Text.Sequence.English
 
             return Math.Max(Math.Min(score, scoreUpperLimit), scoreLowerLimit) / (scoreUpperLimit - scoreLowerLimit);
         }
-        
+
         public override ParseResult Parse(ExtractResult extResult)
         {
             var result = new ParseResult
@@ -91,6 +95,7 @@ namespace Microsoft.Recognizers.Text.Sequence.English
                 ResolutionStr = extResult.Text,
                 Value = ScorePhoneNumber(extResult.Text),
             };
+
             return result;
         }
     }

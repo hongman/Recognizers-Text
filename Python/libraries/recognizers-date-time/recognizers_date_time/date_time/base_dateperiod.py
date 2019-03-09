@@ -12,7 +12,7 @@ from .extractors import DateTimeExtractor
 from .parsers import DateTimeParser, DateTimeParseResult
 from .base_date import BaseDateParser
 from .base_duration import BaseDurationParser
-from .utilities import Token, merge_all_tokens, FormatUtil, DateTimeResolutionResult, DateUtils, DayOfWeek, RegExpUtility
+from .utilities import Token, merge_all_tokens, DateTimeFormatUtil, DateTimeResolutionResult, DateUtils, DayOfWeek, RegExpUtility
 
 MatchedIndex = namedtuple('MatchedIndex', ['matched', 'index'])
 
@@ -21,6 +21,11 @@ class DatePeriodExtractorConfiguration(ABC):
     @property
     @abstractmethod
     def simple_cases_regexes(self) -> List[Pattern]:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def illegal_year_regex(self) -> Pattern:
         raise NotImplementedError
 
     @property
@@ -147,8 +152,13 @@ class BaseDatePeriodExtractor(DateTimeExtractor):
                     if not year_str:
                         year = self.__get_year_from_text(match_year)
 
-                        if not (year >= 1500 and year <= 2000):
+                        if not (year >= Constants.MinYearNum and year <= Constants.MaxYearNum):
                             add_token = False
+
+                if (match.end() - match.start() == Constants.FourDigitsYearLength) and self.__infix_boundary_check(match, source):
+                    sub_str = source[match.start() - 1 : match.end() + 1]
+                    if self.config.illegal_year_regex.match(sub_str):
+                        add_token = False
 
                 if add_token:
                     tokens.append(Token(match.start(), match.end()))
@@ -293,6 +303,13 @@ class BaseDatePeriodExtractor(DateTimeExtractor):
 
         return tokens
 
+    def __infix_boundary_check(self, match: Match, source: str) -> bool:
+        is_match_infix_of_source = False
+        if match.start() > 0 and match.end() < len(source):
+            if source[match.start():match.end()] == match.group():
+                is_match_infix_of_source = True
+
+        return is_match_infix_of_source
 
 class DatePeriodParserConfiguration(ABC):
     @property
@@ -432,6 +449,11 @@ class DatePeriodParserConfiguration(ABC):
 
     @property
     @abstractmethod
+    def unspecific_end_of_range_regex(self) -> Pattern:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def token_before_date(self) -> str:
         raise NotImplementedError
 
@@ -562,12 +584,12 @@ class BaseDatePeriodParser(DateTimeParser):
             if inner_result.success:
                 if inner_result.future_value and inner_result.past_value:
                     inner_result.future_resolution = {
-                        TimeTypeConstants.START_DATE: FormatUtil.format_date(inner_result.future_value[0]),
-                        TimeTypeConstants.END_DATE: FormatUtil.format_date(inner_result.future_value[1])
+                        TimeTypeConstants.START_DATE: DateTimeFormatUtil.format_date(inner_result.future_value[0]),
+                        TimeTypeConstants.END_DATE: DateTimeFormatUtil.format_date(inner_result.future_value[1])
                     }
                     inner_result.past_resolution = {
-                        TimeTypeConstants.START_DATE: FormatUtil.format_date(inner_result.past_value[0]),
-                        TimeTypeConstants.END_DATE: FormatUtil.format_date(inner_result.past_value[1])
+                        TimeTypeConstants.START_DATE: DateTimeFormatUtil.format_date(inner_result.past_value[0]),
+                        TimeTypeConstants.END_DATE: DateTimeFormatUtil.format_date(inner_result.past_value[1])
                     }
                 else:
                     inner_result.future_resolution = {}
@@ -665,8 +687,8 @@ class BaseDatePeriodParser(DateTimeParser):
             if self.config.is_future(month_str):
                 no_year = False
 
-        begin_date_luis = FormatUtil.luis_date(year if not no_year else -1, month, begin_day)
-        end_date_luis = FormatUtil.luis_date(year if not no_year else -1, month, end_day)
+        begin_date_luis = DateTimeFormatUtil.luis_date(year if not no_year else -1, month, begin_day)
+        end_date_luis = DateTimeFormatUtil.luis_date(year if not no_year else -1, month, end_day)
         future_year = year
         past_year = year
         start_date = DateUtils.safe_create_from_value(DateUtils.min_value, year, month, begin_day)
@@ -688,6 +710,9 @@ class BaseDatePeriodParser(DateTimeParser):
         ]
         result.success = True
         return result
+
+    def __Is_Present(self, swift):
+        return swift == 0
 
     def _parse_one_word_period(self, source: str, reference: datetime) -> DateTimeResolutionResult:
         result = DateTimeResolutionResult()
@@ -736,12 +761,26 @@ class BaseDatePeriodParser(DateTimeParser):
             trimmed_source = match.group('suffix')
             result.mod = TimeTypeConstants.MID_MOD
 
+        swift = 0
+        month_str = RegExpUtility.get_group(match, 'month')
+        if month_str:
+            swift = self.config.get_swift_year(trimmed_source)
+        else:
+            swift = self.config.get_swift_day_or_month(trimmed_source)
+            
+        if self.config.unspecific_end_of_range_regex is not None and self.config.unspecific_end_of_range_regex.match(match.string):
+            late_prefix = True
+            trimmed_source = match.string
+            result.mod = TimeTypeConstants.LATE_MOD
+
         if RegExpUtility.get_group(match, 'RelEarly'):
             early_prefix = True
-            result.mod = None
+            if self.__Is_Present(swift):
+                result.mod = None
         elif RegExpUtility.get_group(match, 'RelLate'):
             late_prefix = True
-            result.mod = None
+            if self.__Is_Present(swift):
+                result.mod = None
 
         month_str = RegExpUtility.get_group(match, 'month')
 
@@ -904,6 +943,12 @@ class BaseDatePeriodParser(DateTimeParser):
         future_end = pr_end.value.future_value
         past_begin = pr_begin.value.past_value
         past_end = pr_end.value.past_value
+
+        if future_begin > future_end:
+            future_begin = past_begin
+
+        if past_end < past_begin:
+            past_end = future_end
 
         result.sub_date_time_entities = prs
         result.timex = f'({pr_begin.timex_str},{pr_end.timex_str},P{(future_end - future_begin).days}D)'
@@ -1077,7 +1122,7 @@ class BaseDatePeriodParser(DateTimeParser):
 
         result.future_value = [begin_date, end_date]
         result.past_value = [begin_date, end_date]
-        result.timex = f'({FormatUtil.luis_date_from_datetime(begin_date)},{FormatUtil.luis_date_from_datetime(end_date)},P6M)'
+        result.timex = f'({DateTimeFormatUtil.luis_date_from_datetime(begin_date)},{DateTimeFormatUtil.luis_date_from_datetime(end_date)},P6M)'
         result.success = True
         return result
 
@@ -1167,7 +1212,7 @@ class BaseDatePeriodParser(DateTimeParser):
         if not begin_date == end_date or rest_now_sunday:
             if self._inclusive_end_period:
                 end_date = end_date + timedelta(days=-1)
-            result.timex = f'({FormatUtil.luis_date_from_datetime(begin_date)},{FormatUtil.luis_date_from_datetime(end_date)},{duration_timex})'
+            result.timex = f'({DateTimeFormatUtil.luis_date_from_datetime(begin_date)},{DateTimeFormatUtil.luis_date_from_datetime(end_date)},{duration_timex})'
             result.future_value = [begin_date, end_date]
             result.past_value = [begin_date, end_date]
             result.success = True
@@ -1226,7 +1271,7 @@ class BaseDatePeriodParser(DateTimeParser):
             result.future_value = [begin_date, end_date]
             result.past_value = [begin_date, end_date]
 
-        result.timex = f'({FormatUtil.luis_date_from_datetime(begin_date)},{FormatUtil.luis_date_from_datetime(end_date)},P3M)'
+        result.timex = f'({DateTimeFormatUtil.luis_date_from_datetime(begin_date)},{DateTimeFormatUtil.luis_date_from_datetime(end_date)},P3M)'
         result.success = True
         return result
 

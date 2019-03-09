@@ -5,12 +5,14 @@ import { BaseDateExtractor, BaseDateParser } from "../baseDate";
 import { BaseDurationExtractor, BaseDurationParser } from "../baseDuration";
 import { SpanishDateExtractorConfiguration } from "./dateConfiguration";
 import { SpanishDurationExtractorConfiguration } from "./durationConfiguration";
+import { BaseDateTime } from "../../resources/baseDateTime";
 import { SpanishDateTime } from "../../resources/spanishDateTime";
 import { ICommonDateTimeParserConfiguration } from "../parsers";
 import { IDateTimeExtractor } from "../baseDateTime";
 
 export class SpanishDatePeriodExtractorConfiguration implements IDatePeriodExtractorConfiguration {
     readonly simpleCasesRegexes: RegExp[];
+    readonly illegalYearRegex: RegExp;
     readonly YearRegex: RegExp;
     readonly tillRegex: RegExp;
     readonly followedUnit: RegExp;
@@ -53,6 +55,7 @@ export class SpanishDatePeriodExtractorConfiguration implements IDatePeriodExtra
             RegExpUtility.getSafeRegExp(SpanishDateTime.LaterEarlyPeriodRegex),
             RegExpUtility.getSafeRegExp(SpanishDateTime.WeekWithWeekDayRangeRegex)
         ];
+        this.illegalYearRegex = RegExpUtility.getSafeRegExp(BaseDateTime.IllegalYearRegex);
         this.YearRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.YearRegex);
         this.tillRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.TillRegex);
         this.followedUnit = RegExpUtility.getSafeRegExp(SpanishDateTime.FollowedDateUnit);
@@ -116,6 +119,7 @@ export class SpanishDatePeriodParserConfiguration implements IDatePeriodParserCo
     readonly restOfDateRegex: RegExp;
     readonly laterEarlyPeriodRegex: RegExp;
     readonly weekWithWeekDayRangeRegex: RegExp;
+    readonly unspecificEndOfRangeRegex: RegExp;
     readonly tokenBeforeDate: string;
     readonly dayOfMonth: ReadonlyMap<string, number>;
     readonly monthOfYear: ReadonlyMap<string, number>;
@@ -124,7 +128,7 @@ export class SpanishDatePeriodParserConfiguration implements IDatePeriodParserCo
     readonly unitMap: ReadonlyMap<string, string>;
 
     readonly nextPrefixRegex: RegExp;
-    readonly pastPrefixRegex: RegExp;
+    readonly previousPrefixRegex: RegExp;
     readonly thisPrefixRegex: RegExp;
     readonly numberCombinedWithUnit: RegExp;
 
@@ -163,9 +167,10 @@ export class SpanishDatePeriodParserConfiguration implements IDatePeriodParserCo
         this.restOfDateRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.RestOfDateRegex);
         this.laterEarlyPeriodRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.LaterEarlyPeriodRegex);
         this.weekWithWeekDayRangeRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.WeekWithWeekDayRangeRegex);
+        this.unspecificEndOfRangeRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.UnspecificEndOfRangeRegex);
 
         this.nextPrefixRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.NextPrefixRegex);
-        this.pastPrefixRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.PastPrefixRegex);
+        this.previousPrefixRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.PreviousPrefixRegex);
         this.thisPrefixRegex = RegExpUtility.getSafeRegExp(SpanishDateTime.ThisPrefixRegex);
 
         this.inConnectorRegex = config.utilityConfiguration.inConnectorRegex;
@@ -184,7 +189,7 @@ export class SpanishDatePeriodParserConfiguration implements IDatePeriodParserCo
             swift = 1;
         }
 
-        if (RegExpUtility.getFirstMatchIndex(this.pastPrefixRegex, trimedText).matched) {
+        if (RegExpUtility.getFirstMatchIndex(this.previousPrefixRegex, trimedText).matched) {
             swift = -1;
         }
 
@@ -198,7 +203,7 @@ export class SpanishDatePeriodParserConfiguration implements IDatePeriodParserCo
             swift = 1;
         }
 
-        if (RegExpUtility.getFirstMatchIndex(this.pastPrefixRegex, trimedText).matched) {
+        if (RegExpUtility.getFirstMatchIndex(this.previousPrefixRegex, trimedText).matched) {
             swift = -1;
         }
         else if (RegExpUtility.getFirstMatchIndex(this.thisPrefixRegex, trimedText).matched) {
@@ -210,47 +215,43 @@ export class SpanishDatePeriodParserConfiguration implements IDatePeriodParserCo
 
     isFuture(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return RegExpUtility.getFirstMatchIndex(this.thisPrefixRegex, trimedText).matched
-            || RegExpUtility.getFirstMatchIndex(this.nextPrefixRegex, trimedText).matched;
+        return RegExpUtility.getFirstMatchIndex(this.thisPrefixRegex, trimedText).matched ||
+            RegExpUtility.getFirstMatchIndex(this.nextPrefixRegex, trimedText).matched;
     }
 
     isYearToDate(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return trimedText === "año a la fecha"
-            || trimedText === "años a la fecha";
+        return SpanishDateTime.YearToDateTerms.some(o => trimedText === o);
     }
 
     isMonthToDate(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return trimedText === "mes a la fecha"
-            || trimedText === "meses a la fecha";
+        return SpanishDateTime.MonthToDateTerms.some(o => trimedText === o);
     }
 
     isWeekOnly(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return trimedText.endsWith("semana")
-            && !trimedText.endsWith("fin de semana");
+        return SpanishDateTime.WeekTerms.some(o => trimedText.endsWith(o)) &&
+            !SpanishDateTime.WeekendTerms.some(o => trimedText.endsWith(o));
     }
 
     isWeekend(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return trimedText.endsWith("fin de semana");
+        return SpanishDateTime.WeekendTerms.some(o => trimedText.endsWith(o));
     }
 
     isMonthOnly(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return trimedText.endsWith("mes")
-            || trimedText.endsWith("meses");
+        return SpanishDateTime.MonthTerms.some(o => trimedText.endsWith(o));
     }
 
     isYearOnly(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return trimedText.endsWith("año")
-            || trimedText.endsWith("años");
+        return SpanishDateTime.YearTerms.some(o => trimedText.endsWith(o));
     }
 
     isLastCardinal(source: string): boolean {
         let trimedText = source.trim().toLowerCase();
-        return RegExpUtility.getFirstMatchIndex(this.pastPrefixRegex, trimedText).matched;
+        return RegExpUtility.getFirstMatchIndex(this.previousPrefixRegex, trimedText).matched;
     }
 }

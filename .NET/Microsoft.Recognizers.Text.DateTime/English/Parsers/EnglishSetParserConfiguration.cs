@@ -5,6 +5,34 @@ namespace Microsoft.Recognizers.Text.DateTime.English
 {
     public class EnglishSetParserConfiguration : BaseOptionsConfiguration, ISetParserConfiguration
     {
+        public EnglishSetParserConfiguration(ICommonDateTimeParserConfiguration config)
+            : base(config)
+        {
+            DurationExtractor = config.DurationExtractor;
+            TimeExtractor = config.TimeExtractor;
+            DateExtractor = config.DateExtractor;
+            DateTimeExtractor = config.DateTimeExtractor;
+            DatePeriodExtractor = config.DatePeriodExtractor;
+            TimePeriodExtractor = config.TimePeriodExtractor;
+            DateTimePeriodExtractor = config.DateTimePeriodExtractor;
+
+            DurationParser = config.DurationParser;
+            TimeParser = config.TimeParser;
+            DateParser = config.DateParser;
+            DateTimeParser = config.DateTimeParser;
+            DatePeriodParser = config.DatePeriodParser;
+            TimePeriodParser = config.TimePeriodParser;
+            DateTimePeriodParser = config.DateTimePeriodParser;
+            UnitMap = config.UnitMap;
+
+            EachPrefixRegex = EnglishSetExtractorConfiguration.EachPrefixRegex;
+            PeriodicRegex = EnglishSetExtractorConfiguration.PeriodicRegex;
+            EachUnitRegex = EnglishSetExtractorConfiguration.EachUnitRegex;
+            EachDayRegex = EnglishSetExtractorConfiguration.EachDayRegex;
+            SetWeekDayRegex = EnglishSetExtractorConfiguration.SetWeekDayRegex;
+            SetEachRegex = EnglishSetExtractorConfiguration.SetEachRegex;
+        }
+
         public IDateTimeExtractor DurationExtractor { get; }
 
         public IDateTimeParser DurationParser { get; }
@@ -13,7 +41,7 @@ namespace Microsoft.Recognizers.Text.DateTime.English
 
         public IDateTimeParser TimeParser { get; }
 
-        public IDateTimeExtractor DateExtractor { get; }
+        public IDateExtractor DateExtractor { get; }
 
         public IDateTimeParser DateParser { get; }
 
@@ -46,33 +74,6 @@ namespace Microsoft.Recognizers.Text.DateTime.English
         public Regex SetWeekDayRegex { get; }
 
         public Regex SetEachRegex { get; }
-
-        public EnglishSetParserConfiguration(ICommonDateTimeParserConfiguration config) : base(config)
-        {
-            DurationExtractor = config.DurationExtractor;
-            TimeExtractor = config.TimeExtractor;
-            DateExtractor = config.DateExtractor;
-            DateTimeExtractor = config.DateTimeExtractor;
-            DatePeriodExtractor = config.DatePeriodExtractor;
-            TimePeriodExtractor = config.TimePeriodExtractor;
-            DateTimePeriodExtractor = config.DateTimePeriodExtractor;
-
-            DurationParser = config.DurationParser;
-            TimeParser = config.TimeParser;
-            DateParser = config.DateParser;
-            DateTimeParser = config.DateTimeParser;
-            DatePeriodParser = config.DatePeriodParser;
-            TimePeriodParser = config.TimePeriodParser;
-            DateTimePeriodParser = config.DateTimePeriodParser;
-            UnitMap = config.UnitMap;
-
-            EachPrefixRegex = EnglishSetExtractorConfiguration.EachPrefixRegex;
-            PeriodicRegex = EnglishSetExtractorConfiguration.PeriodicRegex;
-            EachUnitRegex = EnglishSetExtractorConfiguration.EachUnitRegex;
-            EachDayRegex = EnglishSetExtractorConfiguration.EachDayRegex;
-            SetWeekDayRegex = EnglishSetExtractorConfiguration.SetWeekDayRegex;
-            SetEachRegex = EnglishSetExtractorConfiguration.SetEachRegex;
-        }
 
         public bool GetMatchedDailyTimex(string text, out string timex)
         {

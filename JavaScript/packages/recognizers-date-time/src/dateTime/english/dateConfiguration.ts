@@ -42,9 +42,25 @@ export class EnglishDateExtractorConfiguration implements IDateExtractorConfigur
                 RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor4),
 
             RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor6),
-            RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor7),
+
+            EnglishDateTime.DefaultLanguageFallback === Constants.DefaultLanguageFallback_MDY?
+                RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor7L):
+                RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor9L),
+
+            EnglishDateTime.DefaultLanguageFallback === Constants.DefaultLanguageFallback_MDY?
+                RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor7S):
+                RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor9S),
+
             RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor8),
-            RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor9),
+
+            EnglishDateTime.DefaultLanguageFallback === Constants.DefaultLanguageFallback_MDY?
+                RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor9L):
+                RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor7L),
+
+            EnglishDateTime.DefaultLanguageFallback === Constants.DefaultLanguageFallback_MDY?
+                RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor9S):
+                RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractor7S),
+
             RegExpUtility.getSafeRegExp(EnglishDateTime.DateExtractorA),
         ];
         this.implicitDateList = [
@@ -111,7 +127,7 @@ export class EnglishDateParserConfiguration implements IDateParserConfiguration 
     // If the spanish date parser need the same regexes, they should be extracted
     static readonly relativeDayRegex = RegExpUtility.getSafeRegExp(EnglishDateTime.RelativeDayRegex);
     static readonly nextPrefixRegex = RegExpUtility.getSafeRegExp(EnglishDateTime.NextPrefixRegex);
-    static readonly pastPrefixRegex = RegExpUtility.getSafeRegExp(EnglishDateTime.PastPrefixRegex);
+    static readonly previousPrefixRegex = RegExpUtility.getSafeRegExp(EnglishDateTime.PreviousPrefixRegex);
 
     constructor(config: EnglishCommonDateTimeParserConfiguration) {
         this.ordinalExtractor = config.ordinalExtractor;
@@ -159,6 +175,10 @@ export class EnglishDateParserConfiguration implements IDateParserConfiguration 
             swift = 2;
         } else if (trimmedText.endsWith("day before yesterday")) {
             swift = -2;
+        } else if (trimmedText.endsWith("day after")) {
+            swift = 1;
+        } else if (trimmedText.endsWith("day before")) {
+            swift = -1;
         } else if (matches.length) {
             swift = this.getSwift(source);
         }
@@ -173,7 +193,7 @@ export class EnglishDateParserConfiguration implements IDateParserConfiguration 
         let trimmedText = source.trim().toLowerCase();
         let swift = 0;
         let nextPrefixMatches = RegExpUtility.getMatches(EnglishDateParserConfiguration.nextPrefixRegex, trimmedText);
-        let pastPrefixMatches = RegExpUtility.getMatches(EnglishDateParserConfiguration.pastPrefixRegex, trimmedText);
+        let pastPrefixMatches = RegExpUtility.getMatches(EnglishDateParserConfiguration.previousPrefixRegex, trimmedText);
         if (nextPrefixMatches.length) {
             swift = 1;
         } else if (pastPrefixMatches.length) {

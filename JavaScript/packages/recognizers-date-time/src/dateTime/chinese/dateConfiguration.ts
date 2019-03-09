@@ -5,7 +5,7 @@ import { IDateExtractorConfiguration, IDateParserConfiguration, BaseDateExtracto
 import { BaseDurationExtractor, BaseDurationParser } from "../baseDuration"
 import { Constants, TimeTypeConstants } from "../constants"
 import { ChineseDurationExtractor } from "./durationConfiguration";
-import { Token, FormatUtil, DateUtils, DateTimeResolutionResult, IDateTimeUtilityConfiguration, StringMap } from "../utilities";
+import { Token, DateTimeFormatUtil, DateUtils, DateTimeResolutionResult, IDateTimeUtilityConfiguration, StringMap } from "../utilities";
 import { ChineseDateTime } from "../../resources/chineseDateTime";
 import { IDateTimeParser, DateTimeParseResult } from "../parsers"
 
@@ -132,11 +132,11 @@ class ChineseDateParserConfiguration implements IDateParserConfiguration {
             swift = 1;
         } else if (trimmedSource.startsWith('昨')) {
             swift = -1;
-        } else if (trimmedSource === '大后天') {
+        } else if (trimmedSource === '大后天' || trimmedSource === '大後天') {
             swift = 3;
         } else if (trimmedSource === '大前天') {
             swift = -3;
-        } else if (trimmedSource === '后天') {
+        } else if (trimmedSource === '后天' || trimmedSource === '後天') {
             swift = 2;
         } else if (trimmedSource === '前天') {
             swift = -2;
@@ -215,9 +215,9 @@ export class ChineseDateParser extends BaseDateParser {
             }
             if (innerResult.success) {
                 innerResult.futureResolution = {};
-                innerResult.futureResolution[TimeTypeConstants.DATE] = FormatUtil.formatDate(innerResult.futureValue);
+                innerResult.futureResolution[TimeTypeConstants.DATE] = DateTimeFormatUtil.formatDate(innerResult.futureValue);
                 innerResult.pastResolution = {};
-                innerResult.pastResolution[TimeTypeConstants.DATE] = FormatUtil.formatDate(innerResult.pastValue);
+                innerResult.pastResolution[TimeTypeConstants.DATE] = DateTimeFormatUtil.formatDate(innerResult.pastValue);
                 innerResult.isLunar = this.parseLunarCalendar(source);
                 resultValue = innerResult;
             }
@@ -267,14 +267,14 @@ export class ChineseDateParser extends BaseDateParser {
             if (hasMonth) {
                 if (RegExpUtility.isMatch(this.tokenNextRegex, monthStr)) {
                     month++;
-                    if (month === 12) {
-                        month = 0;
+                    if (month === Constants.MaxMonth + 1) {
+                        month = Constants.MinMonth;
                         year++;
                     }
                 } else if (RegExpUtility.isMatch(this.tokenLastRegex, monthStr)) {
                     month--;
-                    if (month === -1) {
-                        month = 12;
+                    if (month === Constants.MinMonth - 1) {
+                        month = Constants.MaxMonth;
                         year--;
                     }
                 }
@@ -287,22 +287,70 @@ export class ChineseDateParser extends BaseDateParser {
                 }
             }
 
-            result.timex = FormatUtil.luisDate(hasYear ? year : -1, hasMonth ? month : -1, day);
+            result.timex = DateTimeFormatUtil.luisDate(hasYear ? year : -1, hasMonth ? month : -1, day);
             let futureDate: Date;
             let pastDate: Date;
 
-            if (day > this.monthMaxDays[month]) {
-                futureDate = DateUtils.safeCreateFromMinValue(year, month + 1, day);
-                pastDate = DateUtils.safeCreateFromMinValue(year, month - 1, day);
+            if (day > this.getMonthMaxDay(year, month)) {
+                let futureMonth = month + 1;
+                let pastMonth = month - 1;
+                let futureYear = year;
+                let pastYear = year;
+
+                if (futureMonth === Constants.MaxMonth + 1) {
+                    futureMonth = Constants.MinMonth;
+                    futureYear = year++;
+                }
+                if (pastMonth === Constants.MinMonth - 1) {
+                    pastMonth = Constants.MaxMonth;
+                    pastYear = year--;
+                }
+
+                let isFutureValid = DateUtils.isValidDate(futureYear, futureMonth, day);
+                let isPastValid = DateUtils.isValidDate(pastYear, pastMonth, day);
+
+                if (isFutureValid && isPastValid) {
+                    futureDate = DateUtils.safeCreateFromMinValue(futureYear, futureMonth, day);
+                    pastDate = DateUtils.safeCreateFromMinValue(pastYear, pastMonth, day);
+                }
+                else if (isFutureValid && !isPastValid) {
+                    futureDate = pastDate = DateUtils.safeCreateFromMinValue(futureYear, futureMonth, day);
+                }
+                else if (!isFutureValid && !isPastValid){
+                    futureDate = pastDate = DateUtils.safeCreateFromMinValue(pastYear, pastMonth, day);
+                }
+                else {
+                    futureDate = pastDate = DateUtils.safeCreateFromMinValue(year, month, day);
+                }
             } else {
                 futureDate = DateUtils.safeCreateFromMinValue(year, month, day);
                 pastDate = DateUtils.safeCreateFromMinValue(year, month, day);
+                
                 if (!hasMonth) {
-                    if (futureDate < referenceDate) futureDate = DateUtils.addMonths(futureDate, 1);
-                    if (pastDate >= referenceDate) pastDate = DateUtils.addMonths(pastDate, -1);
+                    if (futureDate < referenceDate) {
+                        if (this.isValidDate(year, month + 1, day)) {
+                            futureDate = DateUtils.addMonths(futureDate, 1);
+                        }
+                    }
+                    if (pastDate >= referenceDate) {
+                        if (this.isValidDate(year, month - 1, day)) {
+                            pastDate = DateUtils.addMonths(pastDate, -1);
+                        }
+                        else if (this.isNonleapYearFeb29th(year, month - 1, day)){
+                            pastDate = DateUtils.addMonths(pastDate, -2);
+                        }
+                    }
                 } else if (hasMonth && !hasYear) {
-                    if (futureDate < referenceDate) futureDate = DateUtils.addYears(futureDate, 1);
-                    if (pastDate >= referenceDate) pastDate = DateUtils.addYears(pastDate, -1);
+                    if (futureDate < referenceDate) {
+                        if (DateUtils.isValidDate(year + 1, month, day)) {
+                            futureDate = DateUtils.addYears(futureDate, 1);
+                        }
+                    }
+                    if (pastDate >= referenceDate) {
+                        if (DateUtils.isValidDate(year - 1, month, day)){
+                            pastDate = DateUtils.addYears(pastDate, -1);
+                        }
+                    }
                 }
             }
 
@@ -318,7 +366,7 @@ export class ChineseDateParser extends BaseDateParser {
             let swift = this.config.getSwiftDay(match.value);
             let value = DateUtils.addDays(referenceDate, swift);
 
-            result.timex = FormatUtil.luisDateFromDate(value);
+            result.timex = DateTimeFormatUtil.luisDateFromDate(value);
             result.futureValue = value;
             result.pastValue = value;
             result.success = true;
@@ -331,7 +379,7 @@ export class ChineseDateParser extends BaseDateParser {
             let weekdayStr = match.groups('weekday').value;
             let value = DateUtils.this(referenceDate, this.config.dayOfWeek.get(weekdayStr));
 
-            result.timex = FormatUtil.luisDateFromDate(value);
+            result.timex = DateTimeFormatUtil.luisDateFromDate(value);
             result.futureValue = value;
             result.pastValue = value;
             result.success = true;
@@ -344,7 +392,7 @@ export class ChineseDateParser extends BaseDateParser {
             let weekdayStr = match.groups('weekday').value;
             let value = DateUtils.next(referenceDate, this.config.dayOfWeek.get(weekdayStr));
 
-            result.timex = FormatUtil.luisDateFromDate(value);
+            result.timex = DateTimeFormatUtil.luisDateFromDate(value);
             result.futureValue = value;
             result.pastValue = value;
             result.success = true;
@@ -357,7 +405,7 @@ export class ChineseDateParser extends BaseDateParser {
             let weekdayStr = match.groups('weekday').value;
             let value = DateUtils.last(referenceDate, this.config.dayOfWeek.get(weekdayStr));
 
-            result.timex = FormatUtil.luisDateFromDate(value);
+            result.timex = DateTimeFormatUtil.luisDateFromDate(value);
             result.futureValue = value;
             result.pastValue = value;
             result.success = true;
@@ -412,10 +460,10 @@ export class ChineseDateParser extends BaseDateParser {
         let noYear = false;
         if (year === 0) {
             year = referenceDate.getFullYear();
-            result.timex = FormatUtil.luisDate(-1, month, day);
+            result.timex = DateTimeFormatUtil.luisDate(-1, month, day);
             noYear = true;
         } else {
-            result.timex = FormatUtil.luisDate(year, month, day);
+            result.timex = DateTimeFormatUtil.luisDate(year, month, day);
         }
         let futureDate = DateUtils.safeCreateFromMinValue(year, month, day);
         let pastDate = DateUtils.safeCreateFromMinValue(year, month, day);
@@ -462,5 +510,35 @@ export class ChineseDateParser extends BaseDateParser {
         return this.config.dayOfMonth.get(source) > 31
             ? this.config.dayOfMonth.get(source) % 31
             : this.config.dayOfMonth.get(source);
+    }
+
+    private getMonthMaxDay(year: number, month: number): number {
+        let maxDay = this.monthMaxDays[month];
+
+            if (!DateUtils.isLeapYear(year) && month === 1)
+            {
+                maxDay -= 1;
+            }
+
+            return maxDay;
+    }
+
+    private isValidDate(year: number, month: number, day: number): boolean {
+        if (month < Constants.MinMonth)
+            {
+                year--;
+                month = Constants.MaxMonth;
+            }
+
+            if (month > Constants.MaxMonth)
+            {
+                year++;
+                month = Constants.MinMonth;
+            }
+            return DateUtils.isValidDate(year, month, day);
+    }
+
+    private isNonleapYearFeb29th(year: number, month: number, day: number): boolean {
+        return !DateUtils.isLeapYear(year) && month === 1 && day === 29;
     }
 }

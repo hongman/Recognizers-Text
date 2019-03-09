@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+﻿using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -9,16 +6,17 @@ namespace Microsoft.Recognizers.Text.Number
 {
     public class BaseCJKNumberParser : BaseNumberParser
     {
-        protected new readonly ICJKNumberParserConfiguration Config;
-
-        public BaseCJKNumberParser(INumberParserConfiguration config) : base(config)
+        public BaseCJKNumberParser(INumberParserConfiguration config)
+            : base(config)
         {
             this.Config = config as ICJKNumberParserConfiguration;
         }
 
+        protected new ICJKNumberParserConfiguration Config { get; private set; }
+
         public override ParseResult Parse(ExtractResult extResult)
         {
-            // check if the parser is configured to support specific types
+            // Check if the parser is configured to support specific types
             if (SupportedTypes != null && !SupportedTypes.Any(t => extResult.Type.Equals(t)))
             {
                 return null;
@@ -34,7 +32,7 @@ namespace Microsoft.Recognizers.Text.Number
                 Length = extResult.Length,
                 Data = extResult.Data,
                 Text = extResult.Text,
-                Type = extResult.Type
+                Type = extResult.Type,
             };
 
             if (Config.CultureInfo.Name == "zh-CN")
@@ -59,6 +57,7 @@ namespace Microsoft.Recognizers.Text.Number
                 {
                     ret.Value = -(double)ret.Value;
                 }
+
                 ret.ResolutionStr = ret.Value.ToString();
             }
             else if (extra.Contains("Pow"))
@@ -86,29 +85,13 @@ namespace Microsoft.Recognizers.Text.Number
 
             if (ret != null)
             {
-                ret.Text = extResult.Text;
+                ret.Text = extResult.Text.ToLowerInvariant();
             }
 
             return ret;
         }
 
-        // Replace traditional Chinese characters with simpilified Chinese ones. 
-        private string ReplaceTraWithSim(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return text;
-            }
-
-            var builder = new StringBuilder();
-            foreach (char c in text)
-            {
-                builder.Append(Config.TratoSimMap.ContainsKey(c) ? Config.TratoSimMap[c] : c);
-            }
-            return builder.ToString();
-        }
-
-        // Parse Fraction phrase. 
+        // Parse Fraction phrase.
         protected ParseResult ParseFraction(ExtractResult extResult)
         {
             var result = new ParseResult
@@ -116,12 +99,12 @@ namespace Microsoft.Recognizers.Text.Number
                 Start = extResult.Start,
                 Length = extResult.Length,
                 Text = extResult.Text,
-                Type = extResult.Type
+                Type = extResult.Type,
             };
 
             var resultText = extResult.Text;
             var splitResult = Config.FracSplitRegex.Split(resultText);
-            string intPart = "", demoPart = "", numPart = "";
+            string intPart = string.Empty, demoPart = string.Empty, numPart = string.Empty;
             if (splitResult.Length == 3)
             {
                 intPart = splitResult[0];
@@ -149,18 +132,18 @@ namespace Microsoft.Recognizers.Text.Number
 
             if (Config.NegativeNumberSignRegex.IsMatch(intPart))
             {
-                result.Value = intValue - numValue / demoValue;
+                result.Value = intValue - (numValue / demoValue);
             }
             else
             {
-                result.Value = intValue + numValue / demoValue;
+                result.Value = intValue + (numValue / demoValue);
             }
 
             result.ResolutionStr = result.Value.ToString();
             return result;
         }
 
-        // Parse percentage phrase. 
+        // Parse percentage phrase.
         protected ParseResult ParsePercentage(ExtractResult extResult)
         {
             var result = new ParseResult
@@ -168,7 +151,7 @@ namespace Microsoft.Recognizers.Text.Number
                 Start = extResult.Start,
                 Length = extResult.Length,
                 Text = extResult.Text,
-                Type = extResult.Type
+                Type = extResult.Type,
             };
 
             var resultText = extResult.Text;
@@ -224,11 +207,11 @@ namespace Microsoft.Recognizers.Text.Number
                     }
                     else if (matches.Count == 5)
                     {
-                        // Deal the Japanese percentage case like "xxx割xxx分xxx厘", get the integer value and convert into result. 
+                        // Deal the Japanese percentage case like "xxx割xxx分xxx厘", get the integer value and convert into result.
                         var intNumberChar = matches[0].Value[0];
                         var pointNumberChar = matches[1].Value[0];
                         var dotNumberChar = matches[3].Value[0];
-                        
+
                         double pointNumber = Config.ZeroToNineMap[pointNumberChar] * 0.1;
                         double dotNumber = Config.ZeroToNineMap[dotNumberChar] * 0.01;
 
@@ -290,7 +273,7 @@ namespace Microsoft.Recognizers.Text.Number
                 doubleText = ReplaceUnit(doubleText);
 
                 var splitResult = Config.PointRegex.Split(doubleText);
-                if (splitResult[0] == "")
+                if (splitResult[0] == string.Empty)
                 {
                     splitResult[0] = "零";
                 }
@@ -315,7 +298,7 @@ namespace Microsoft.Recognizers.Text.Number
             return result;
         }
 
-        // Parse ordinal phrase. 
+        // Parse ordinal phrase.
         protected ParseResult ParseOrdinal(ExtractResult extResult)
         {
             var result = new ParseResult
@@ -323,7 +306,7 @@ namespace Microsoft.Recognizers.Text.Number
                 Start = extResult.Start,
                 Length = extResult.Length,
                 Text = extResult.Text,
-                Type = extResult.Type
+                Type = extResult.Type,
             };
 
             var resultText = extResult.Text;
@@ -345,7 +328,7 @@ namespace Microsoft.Recognizers.Text.Number
                 Start = extResult.Start,
                 Length = extResult.Length,
                 Text = extResult.Text,
-                Type = extResult.Type
+                Type = extResult.Type,
             };
 
             var resultText = extResult.Text;
@@ -353,7 +336,8 @@ namespace Microsoft.Recognizers.Text.Number
             if (Config.DoubleAndRoundRegex.IsMatch(resultText))
             {
                 resultText = ReplaceUnit(resultText);
-                result.Value = GetDigitValue(resultText.Substring(0, resultText.Length - 1),
+                result.Value = GetDigitValue(
+                    resultText.Substring(0, resultText.Length - 1),
                     Config.RoundNumberMapChar[resultText[resultText.Length - 1]]);
             }
             else
@@ -361,7 +345,7 @@ namespace Microsoft.Recognizers.Text.Number
                 resultText = ReplaceUnit(resultText);
                 var splitResult = Config.PointRegex.Split(resultText);
 
-                if (splitResult[0] == "")
+                if (splitResult[0] == string.Empty)
                 {
                     splitResult[0] = "零";
                 }
@@ -389,11 +373,28 @@ namespace Microsoft.Recognizers.Text.Number
                 Length = extResult.Length,
                 Text = extResult.Text,
                 Type = extResult.Type,
-                Value = GetIntValue(extResult.Text)
+                Value = GetIntValue(extResult.Text),
             };
 
             result.ResolutionStr = result.Value.ToString();
             return result;
+        }
+
+        // Replace traditional Chinese characters with simplified Chinese ones.
+        private string ReplaceTraWithSim(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+
+            var builder = new StringBuilder();
+            foreach (char c in text)
+            {
+                builder.Append(Config.TratoSimMap.ContainsKey(c) ? Config.TratoSimMap[c] : c);
+            }
+
+            return builder.ToString();
         }
 
         private double GetDigitValue(string intStr, double power)
@@ -466,7 +467,6 @@ namespace Microsoft.Recognizers.Text.Number
                 {
                     intStr = intStr.Substring(0, intStr.Length - 3);
                 }
-
             }
             else if (Config.PairRegex.IsMatch(intStr))
             {
@@ -479,7 +479,7 @@ namespace Microsoft.Recognizers.Text.Number
                 isNegative = true;
                 if (Config.CultureInfo.Name == "ko-KR")
                 {
-                    intStr = Regex.Replace(intStr, Config.NegativeNumberSignRegex.ToString(), "");
+                    intStr = Regex.Replace(intStr, Config.NegativeNumberSignRegex.ToString(), string.Empty);
                 }
                 else
                 {
@@ -491,7 +491,6 @@ namespace Microsoft.Recognizers.Text.Number
             {
                 if (Config.RoundNumberMapChar.ContainsKey(intStr[i]))
                 {
-
                     var roundRecent = Config.RoundNumberMapChar[intStr[i]];
                     if (roundBefore != -1 && roundRecent > roundBefore)
                     {
@@ -505,6 +504,7 @@ namespace Microsoft.Recognizers.Text.Number
                             partValue += beforeValue * roundDefault;
                             intValue += partValue * roundRecent;
                         }
+
                         roundBefore = -1;
                         partValue = 0;
                     }
@@ -544,6 +544,7 @@ namespace Microsoft.Recognizers.Text.Number
                         {
                             roundDefault = 1;
                         }
+
                         partValue += Config.ZeroToNineMap[intStr[i]] * roundDefault;
                         intValue += partValue;
                         partValue = 0;

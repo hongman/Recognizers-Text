@@ -22,7 +22,9 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
         }
 
         public IDateTimeExtractor Extractor { get; set; }
+
         public IDateTimeParser DateTimeParser { get; set; }
+
         public TestModel TestSpec { get; set; }
 
         public void TestSpecInitialize(TestResources resources)
@@ -86,13 +88,13 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
                 var expected = tuple.Item1;
                 var actual = tuple.Item2;
 
-                Assert.AreEqual(expected.TypeName, actual.TypeName, GetMessage(TestSpec));
                 Assert.AreEqual(expected.Text, actual.Text, GetMessage(TestSpec));
+                Assert.AreEqual(expected.TypeName, actual.TypeName, GetMessage(TestSpec));
                 Assert.AreEqual(expected.Start, actual.Start, GetMessage(TestSpec));
                 Assert.AreEqual(expected.End, actual.End, GetMessage(TestSpec));
 
                 var values = actual.Resolution as IDictionary<string, object>;
-                
+
                 // Actual ValueSet types should not be modified as that's considered a breaking API change
                 var actualValues = ((List<Dictionary<string, string>>)values[ResolutionKey.ValueSet]).ToList();
                 var expectedValues =
@@ -130,8 +132,7 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
 
                 if (expected.ParentText != null)
                 {
-                    Assert.AreEqual(expected.ParentText, ((ExtendedModelResult)actual).ParentText,
-                        GetMessage(TestSpec));
+                    Assert.AreEqual(expected.ParentText, ((ExtendedModelResult)actual).ParentText, GetMessage(TestSpec));
                 }
 
                 // Actual ValueSet types should not be modified as that's considered a breaking API change
@@ -159,7 +160,7 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
 
             var referenceDateTime = TestSpec.GetReferenceDateTime();
 
-            var actualResults = Extractor.Extract(TestSpec.Input, referenceDateTime);
+            var actualResults = Extractor.Extract(TestSpec.Input.ToLowerInvariant(), referenceDateTime);
             var expectedResults = TestSpec.CastResults<ExtractResult>();
 
             Assert.AreEqual(expectedResults.Count(), actualResults.Count, GetMessage(TestSpec));
@@ -168,13 +169,13 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
             {
                 var expected = tuple.Item1;
                 var actual = tuple.Item2;
+                var ignoreResultCase = true;
 
                 Assert.AreEqual(expected.Type, actual.Type, GetMessage(TestSpec));
-                Assert.AreEqual(expected.Text, actual.Text, GetMessage(TestSpec));
+                Assert.AreEqual(expected.Text, actual.Text, ignoreResultCase, GetMessage(TestSpec));
                 Assert.AreEqual(expected.Start, actual.Start, GetMessage(TestSpec));
                 Assert.AreEqual(expected.Length, actual.Length, GetMessage(TestSpec));
             }
-
         }
 
         public void TestDateTimeParser()
@@ -183,7 +184,7 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
 
             var referenceDateTime = TestSpec.GetReferenceDateTime();
 
-            var extractResults = Extractor.Extract(TestSpec.Input, referenceDateTime);
+            var extractResults = Extractor.Extract(TestSpec.Input.ToLowerInvariant(), referenceDateTime);
             var actualResults = extractResults.Select(o => DateTimeParser.Parse(o, referenceDateTime)).ToArray();
 
             var expectedResults = TestSpec.CastResults<DateTimeParseResult>();
@@ -194,8 +195,10 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
             {
                 var expected = tuple.Item1;
                 var actual = tuple.Item2;
+                var ignoreResultCase = true;
+
                 Assert.AreEqual(expected.Type, actual.Type, GetMessage(TestSpec));
-                Assert.AreEqual(expected.Text, actual.Text, GetMessage(TestSpec));
+                Assert.AreEqual(expected.Text, actual.Text, ignoreResultCase, GetMessage(TestSpec));
                 Assert.AreEqual(expected.Start, actual.Start, GetMessage(TestSpec));
                 Assert.AreEqual(expected.Length, actual.Length, GetMessage(TestSpec));
 
@@ -221,7 +224,6 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
                     Assert.AreEqual(expectedValue.TimeZoneResolution.Value, actualValue.TimeZoneResolution.Value, GetMessage(TestSpec));
                     Assert.AreEqual(expectedValue.TimeZoneResolution.UtcOffsetMins, actualValue.TimeZoneResolution.UtcOffsetMins, GetMessage(TestSpec));
                 }
-
             }
         }
 
@@ -231,7 +233,7 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
 
             var referenceDateTime = TestSpec.GetReferenceDateTime();
 
-            var extractResults = Extractor.Extract(TestSpec.Input, referenceDateTime);
+            var extractResults = Extractor.Extract(TestSpec.Input.ToLowerInvariant(), referenceDateTime);
             var actualResults = extractResults.Select(o => DateTimeParser.Parse(o, referenceDateTime)).ToArray();
 
             var expectedResults = TestSpec.CastResults<DateTimeParseResult>();
@@ -242,9 +244,10 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
             {
                 var expected = tuple.Item1;
                 var actual = tuple.Item2;
+                var ignoreResultCase = true;
 
-                Assert.AreEqual(expected.Text, actual.Text, GetMessage(TestSpec));
                 Assert.AreEqual(expected.Type, actual.Type, GetMessage(TestSpec));
+                Assert.AreEqual(expected.Text, actual.Text, ignoreResultCase, GetMessage(TestSpec));
                 Assert.AreEqual(expected.Start, actual.Start, GetMessage(TestSpec));
                 Assert.AreEqual(expected.Length, actual.Length, GetMessage(TestSpec));
 
@@ -304,10 +307,21 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
             ValidateResults();
         }
 
+        public void TestGUID()
+        {
+            TestPreValidation();
+            ValidateResults(new string[] { ResolutionKey.Score });
+        }
+
         public void TestChoice()
         {
             TestPreValidation();
             ValidateResults(new string[] { ResolutionKey.Value, ResolutionKey.Score });
+        }
+
+        private static string GetMessage(TestModel spec)
+        {
+            return $"Input: \"{spec.Input}\"";
         }
 
         private void TestPreValidation()
@@ -325,7 +339,6 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
 
         private void ValidateResults(IEnumerable<string> testResolutionKeys = null)
         {
-
             var actualResults = TestContext.GetModelParseResults(TestSpec);
             var expectedResults = TestSpec.CastResults<ModelResult>();
 
@@ -351,8 +364,7 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
                     Assert.AreEqual(expected.End, actual.End, GetMessage(TestSpec));
                 }
 
-                Assert.AreEqual(expected.Resolution[ResolutionKey.Value], actual.Resolution[ResolutionKey.Value],
-                                GetMessage(TestSpec));
+                Assert.AreEqual(expected.Resolution[ResolutionKey.Value], actual.Resolution[ResolutionKey.Value], GetMessage(TestSpec));
 
                 foreach (var key in testResolutionKeys ?? Enumerable.Empty<string>())
                 {
@@ -363,15 +375,7 @@ namespace Microsoft.Recognizers.Text.DataDrivenTests
 
                     Assert.AreEqual(expected.Resolution[key], actual.Resolution[key], GetMessage(TestSpec));
                 }
-
             }
-            
         }
-
-        private static string GetMessage(TestModel spec)
-        {
-            return $"Input: \"{spec.Input}\"";
-        }
-
     }
 }

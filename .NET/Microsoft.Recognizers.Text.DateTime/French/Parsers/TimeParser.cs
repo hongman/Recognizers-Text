@@ -1,10 +1,13 @@
 ﻿using DateObject = System.DateTime;
 
 namespace Microsoft.Recognizers.Text.DateTime.French
-{ 
+{
     public class TimeParser : BaseTimeParser
     {
-        public TimeParser(ITimeParserConfiguration configuration) : base(configuration) { }
+        public TimeParser(ITimeParserConfiguration configuration)
+            : base(configuration)
+        {
+        }
 
         protected override DateTimeResolutionResult InternalParse(string text, DateObject referenceTime)
         {
@@ -13,6 +16,7 @@ namespace Microsoft.Recognizers.Text.DateTime.French
             {
                 innerResult = ParseIsh(text, referenceTime);
             }
+
             return innerResult;
         }
 
@@ -21,10 +25,11 @@ namespace Microsoft.Recognizers.Text.DateTime.French
         private DateTimeResolutionResult ParseIsh(string text, DateObject referenceTime)
         {
             var ret = new DateTimeResolutionResult();
-            var trimmedText = text.ToLowerInvariant().Trim();
+            var lowerText = text.ToLowerInvariant();
 
-            var match = FrenchTimeExtractorConfiguration.IshRegex.Match(trimmedText);
-            if (match.Success && match.Length == trimmedText.Length)
+            var match = FrenchTimeExtractorConfiguration.IshRegex.MatchExact(lowerText, trim: true);
+
+            if (match.Success)
             {
                 var hourStr = match.Groups[Constants.HourGroupName].Value;
                 var hour = Constants.HalfDayHourCount;

@@ -16,6 +16,8 @@ export interface INumberWithUnitExtractorConfiguration {
     readonly buildSuffix: string;
     readonly connectorToken: string;
     readonly compoundUnitConnectorRegex: RegExp;
+    readonly nonUnitRegex: RegExp;
+    readonly ambiguousUnitNumberMultiplierRegex: RegExp;
 }
 
 export class NumberWithUnitExtractor implements IExtractor {
@@ -41,7 +43,7 @@ export class NumberWithUnitExtractor implements IExtractor {
                 maxLength = maxLength >= len ? maxLength : len;
             });
 
-            // 2 is the maxium length of spaces.
+            // 2 is the maximum length of spaces.
             this.maxPrefixMatchLen = maxLength + 2;
 
             this.prefixRegexes = this.buildRegexFromSet(Array.from(this.config.prefixList.values()));
@@ -62,6 +64,21 @@ export class NumberWithUnitExtractor implements IExtractor {
         let numbers = this.config.unitNumExtractor.extract(source);
         let result = new Array<ExtractResult>();
         let sourceLen = source.length;
+
+        /* Special case for cases where number multipliers clash with unit */
+        let ambiguousMultiplierRegex = this.config.ambiguousUnitNumberMultiplierRegex;
+        if (ambiguousMultiplierRegex !== null) {
+
+            numbers.forEach(extNumber => {
+                let match = RegExpUtility.getMatches(ambiguousMultiplierRegex, extNumber.text);
+                if (match.length === 1)
+                {
+                    let newLength = extNumber.length - match[0].length;
+                    extNumber.text = extNumber.text.substring(0, newLength);
+                    extNumber.length = newLength;
+                }
+            });
+        }
 
         /* Mix prefix and numbers, make up a prefix-number combination */
         if (this.maxPrefixMatchLen !== 0) {
@@ -154,9 +171,25 @@ export class NumberWithUnitExtractor implements IExtractor {
                         er.length += prefixUnit.offset;
                         er.text = prefixUnit.unitString + er.text;
                     }
+
                     /* Relative position will be used in Parser */
                     num.start = start - er.start;
                     er.data = num;
+
+                    let isNotUnit = false;
+                    if (er.type === Constants.SYS_UNIT_DIMENSION) {
+                        let nonUnitMatch = RegExpUtility.getMatches(this.config.nonUnitRegex, source);
+
+                        nonUnitMatch.forEach(match => {
+                            if (er.start >= match.index && er.start + er.length <= match.index + match.length) {
+                                isNotUnit = true;
+                            }
+                        });
+                    }
+
+                    if (isNotUnit) {
+                        continue;
+                    }
 
                     result.push(er);
                     continue;
@@ -219,13 +252,27 @@ export class NumberWithUnitExtractor implements IExtractor {
                     for (let j = 0; j < i; j++) {
                         matchResult[j] = true;
                     }
-                    numDependResults.push({
-                        start: match.index,
-                        length: match.length,
-                        text: match.value,
-                        type: this.config.extractType,
-                        data: null
-                    } as ExtractResult);
+
+                    let isNotUnit = false;
+                    if (match.value === Constants.AMBIGUOUS_TIME_TERM) {
+                        let nonUnitMatch = RegExpUtility.getMatches(this.config.nonUnitRegex, source);
+
+                        nonUnitMatch.forEach(time => {
+                            if (this.DimensionInsideTime(match, time)) {
+                                isNotUnit = true;
+                            }
+                        });
+                    }
+
+                    if (isNotUnit === false) {
+                        numDependResults.push({
+                            start: match.index,
+                            length: match.length,
+                            text: match.value,
+                            type: this.config.extractType,
+                            data: null
+                        } as ExtractResult);
+                    }
                 }
             });
         }
@@ -275,7 +322,7 @@ export class NumberWithUnitExtractor implements IExtractor {
         }
 
         // Sort SeparateWords using descending length.
-        regexTokens = regexTokens.sort(this.dinoComparer);
+        regexTokens = regexTokens.sort(this.stringComparer);
 
         let pattern = `${this.config.buildPrefix}(${regexTokens.join('|')})${this.config.buildSuffix}`;
         let options = "gs";
@@ -283,57 +330,33 @@ export class NumberWithUnitExtractor implements IExtractor {
         return RegExpUtility.getSafeRegExp(pattern, options);
     }
 
-    protected dinoComparer(x: string, y: string): number {
-        if (x === null) {
-            if (y === null) {
-                // If x is null and y is null, they're
-                // equal.
-                return 0;
-            }
-            else {
-                // If x is null and y is not null, y
-                // is greater.
+    protected stringComparer(stringA: string, stringB: string): number {
+        if (!stringA && !stringB)
+        {
+            return 0;
+        }
+        else
+        {
+            if (!stringA) 
+            {
                 return 1;
             }
-        }
-        else {
-            // If x is not null...
-            //
-            if (y === null)
-            // ...and y is null, x is greater.
+            if (!stringB)
             {
                 return -1;
-            }
-            else {
-                // ...and y is not null, compare the
-                // lengths of the two strings.
-                //
-                let retval = y.length - x.length;
-
-                if (retval !== 0) {
-                    // If the strings are not of equal length,
-                    // the longer string is greater.
-                    //
-                    return retval;
-                }
-                else {
-                    // If the strings are of equal length,
-                    // sort them with ordinary string comparison.
-                    //
-                    let xl = x.toLowerCase();
-                    let yl = y.toLowerCase();
-                    if (xl < yl) {
-                        return -1;
-                    }
-
-                    if (xl > yl) {
-                        return 1;
-                    }
-
-                    return 0;
-                }
-            }
+            } 
+            return stringB.localeCompare(stringA);
         }
+    }
+    
+
+    private DimensionInsideTime(dimension: Match, time: Match): boolean {
+        let isSubMatch = false;
+        if (dimension.index >= time.index && dimension.index + dimension.length <= time.index + time.length) {
+            isSubMatch = true;
+        }
+
+        return isSubMatch;
     }
 }
 

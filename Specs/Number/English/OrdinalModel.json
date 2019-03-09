@@ -1,5 +1,71 @@
 [
   {
+    "Input": "delete last sentence in the note",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Do you mean \"next\" or \"last\"?",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Show me the antepenultimate.",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Show me the last but one.",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Show me the penultimate.",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Show me the next to last.",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Show me the one before the last one.",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Show me the second to last.",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Delete last sentence.",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Show me the previous one.",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
+    "Input": "Show me the next one.",
+    "NotSupported": "javascript, python, java",
+    "Results": [
+    ]
+  },
+  {
     "Input": "three trillionth",
     "Results": [
       {

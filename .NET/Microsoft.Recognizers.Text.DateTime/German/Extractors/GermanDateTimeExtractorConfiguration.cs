@@ -1,60 +1,59 @@
 ﻿using System.Text.RegularExpressions;
-
+using Microsoft.Recognizers.Definitions.German;
 using Microsoft.Recognizers.Text.DateTime.German.Utilities;
 using Microsoft.Recognizers.Text.DateTime.Utilities;
-using Microsoft.Recognizers.Definitions.German;
-using Microsoft.Recognizers.Text.Number;
 
 namespace Microsoft.Recognizers.Text.DateTime.German
 {
     public class GermanDateTimeExtractorConfiguration : BaseOptionsConfiguration, IDateTimeExtractorConfiguration
     {
-        public static readonly Regex PrepositionRegex = new Regex(DateTimeDefinitions.PrepositionRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public static readonly Regex PrepositionRegex =
+            new Regex(DateTimeDefinitions.PrepositionRegex, RegexOptions.Singleline);
 
         public static readonly Regex NowRegex =
-            new Regex(DateTimeDefinitions.NowRegex,
-                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            new Regex(DateTimeDefinitions.NowRegex, RegexOptions.Singleline);
 
-        public static readonly Regex SuffixRegex = new Regex(DateTimeDefinitions.SuffixRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public static readonly Regex SuffixRegex =
+            new Regex(DateTimeDefinitions.SuffixRegex, RegexOptions.Singleline);
 
-        public static readonly Regex TimeOfDayRegex = new Regex(DateTimeDefinitions.TimeOfDayRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public static readonly Regex TimeOfDayRegex =
+            new Regex(DateTimeDefinitions.TimeOfDayRegex, RegexOptions.Singleline);
 
         public static readonly Regex SpecificTimeOfDayRegex =
-            new Regex(DateTimeDefinitions.SpecificTimeOfDayRegex,
-                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            new Regex(DateTimeDefinitions.SpecificTimeOfDayRegex, RegexOptions.Singleline);
 
         public static readonly Regex TimeOfTodayAfterRegex =
-             new Regex(DateTimeDefinitions.TimeOfTodayAfterRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+             new Regex(DateTimeDefinitions.TimeOfTodayAfterRegex, RegexOptions.Singleline);
 
         public static readonly Regex TimeOfTodayBeforeRegex =
-            new Regex(DateTimeDefinitions.TimeOfTodayBeforeRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            new Regex(DateTimeDefinitions.TimeOfTodayBeforeRegex, RegexOptions.Singleline);
 
         public static readonly Regex SimpleTimeOfTodayAfterRegex =
-            new Regex(DateTimeDefinitions.SimpleTimeOfTodayAfterRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            new Regex(DateTimeDefinitions.SimpleTimeOfTodayAfterRegex, RegexOptions.Singleline);
 
         public static readonly Regex SimpleTimeOfTodayBeforeRegex =
-            new Regex(DateTimeDefinitions.SimpleTimeOfTodayBeforeRegex,
-                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            new Regex(DateTimeDefinitions.SimpleTimeOfTodayBeforeRegex, RegexOptions.Singleline);
 
-        public static readonly Regex TheEndOfRegex = new Regex(DateTimeDefinitions.TheEndOfRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public static readonly Regex SpecificEndOfRegex =
+            new Regex(DateTimeDefinitions.SpecificEndOfRegex, RegexOptions.Singleline);
 
-        public static readonly Regex UnitRegex = new Regex(DateTimeDefinitions.TimeUnitRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public static readonly Regex UnspecificEndOfRegex =
+            new Regex(DateTimeDefinitions.UnspecificEndOfRegex, RegexOptions.Singleline);
 
-        public static readonly Regex ConnectorRegex = new Regex(DateTimeDefinitions.ConnectorRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public static readonly Regex UnitRegex =
+            new Regex(DateTimeDefinitions.TimeUnitRegex, RegexOptions.Singleline);
 
-        public static readonly Regex NumberAsTimeRegex = new Regex(DateTimeDefinitions.NumberAsTimeRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public static readonly Regex ConnectorRegex =
+            new Regex(DateTimeDefinitions.ConnectorRegex, RegexOptions.Singleline);
 
-        public static readonly Regex DateNumberConnectorRegex = new Regex(DateTimeDefinitions.DateNumberConnectorRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public static readonly Regex NumberAsTimeRegex =
+            new Regex(DateTimeDefinitions.NumberAsTimeRegex, RegexOptions.Singleline);
 
-        public GermanDateTimeExtractorConfiguration(IOptionsConfiguration config) : base(config)
+        public static readonly Regex DateNumberConnectorRegex =
+            new Regex(DateTimeDefinitions.DateNumberConnectorRegex, RegexOptions.Singleline);
+
+        public GermanDateTimeExtractorConfiguration(IOptionsConfiguration config)
+            : base(config)
         {
             IntegerExtractor = Number.German.IntegerExtractor.GetInstance();
             DatePointExtractor = new BaseDateExtractor(new GermanDateExtractorConfiguration(this));
@@ -65,7 +64,7 @@ namespace Microsoft.Recognizers.Text.DateTime.German
 
         public IExtractor IntegerExtractor { get; }
 
-        public IDateTimeExtractor DatePointExtractor { get; }
+        public IDateExtractor DatePointExtractor { get; }
 
         public IDateTimeExtractor TimePointExtractor { get; }
 
@@ -85,7 +84,9 @@ namespace Microsoft.Recognizers.Text.DateTime.German
 
         Regex IDateTimeExtractorConfiguration.TimeOfDayRegex => TimeOfDayRegex;
 
-        Regex IDateTimeExtractorConfiguration.TheEndOfRegex => TheEndOfRegex;
+        Regex IDateTimeExtractorConfiguration.SpecificEndOfRegex => SpecificEndOfRegex;
+
+        Regex IDateTimeExtractorConfiguration.UnspecificEndOfRegex => UnspecificEndOfRegex;
 
         Regex IDateTimeExtractorConfiguration.UnitRegex => UnitRegex;
 
@@ -98,9 +99,9 @@ namespace Microsoft.Recognizers.Text.DateTime.German
         public bool IsConnector(string text)
         {
             text = text.Trim();
-            return (string.IsNullOrEmpty(text) 
+            return string.IsNullOrEmpty(text)
                     || PrepositionRegex.IsMatch(text)
-                    || ConnectorRegex.IsMatch(text));
+                    || ConnectorRegex.IsMatch(text);
         }
     }
 }

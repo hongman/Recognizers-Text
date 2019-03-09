@@ -4,3 +4,7 @@
 /TestResults
 /packages
 /.idea
+Python/.cache/v/cache/lastfailed
+/.vs
+/.vscode
+/JavaScript/*.lerna_backup

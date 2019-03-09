@@ -117,7 +117,7 @@ class BaseNumberParser(Parser):
         self.round_number_set: List[str] = list(self.config.round_number_map.keys())
 
     def parse(self, source: ExtractResult) -> Optional[ParseResult]:
-        # check if the parser is configured to support specific types
+        # Check if the parser is configured to support specific types
         if self.supported_types and source.type not in self.supported_types:
             return None
         ret: Optional[ParseResult] = None
@@ -128,7 +128,7 @@ class BaseNumberParser(Parser):
             else:
                 extra = self.config.lang_marker
 
-        #Resolve symbol prefix
+        # Resolve symbol prefix
         is_negative = False
         match_negative = regex.search(self.config.negative_number_sign_regex, source.text)
 
@@ -152,6 +152,7 @@ class BaseNumberParser(Parser):
                 ret.value = ret.value * -1
             # Use culture_info to format values
             ret.resolution_str = self.config.culture_info.format(ret.value) if self.config.culture_info is not None else repr(ret.value)
+            ret.text = ret.text.lower()
 
         return ret
 
@@ -171,7 +172,7 @@ class BaseNumberParser(Parser):
         # [4] 234.567
         # [5] 44/55
         # [6] 2 hundred
-        # dot occured.
+        # dot occurred.
 
         power = 1
         tmp_index = -1
@@ -192,12 +193,13 @@ class BaseNumberParser(Parser):
                     handle = front + handle[tmp_index + len(match):]
                     tmp_index = handle.find(match.group(), start_index)
 
-        # scale used in the calculate of double
+        # Scale used in the calculate of double
         result.value = self._get_digital_value(handle, power)
 
         return result
 
-    def _is_digit(self, c: str) -> bool:
+    @staticmethod
+    def _is_digit(c: str) -> bool:
         return c.isdigit()
 
     def _frac_like_number_parse(self, ext_result: ExtractResult) -> ParseResult:
@@ -423,7 +425,7 @@ class BaseNumberParser(Parser):
                     if match_value is None:
                         match_value = self.config.ordinal_number_map.get(match, None)
 
-                    #This is just for ordinal now. Not for fraction ever.
+                    # This is just for ordinal now. Not for fraction ever.
                     if ordinal:
                         frac_part = self.config.ordinal_number_map[match]
                         if tmp_stack:
@@ -491,30 +493,47 @@ class BaseNumberParser(Parser):
 
         return result
 
-    def _get_digital_value(self, digitstr: str, power: int) -> Decimal:
+    def __skip_non_decimal_separator(self, ch: str, distance: int, culture: CultureInfo) -> bool:
+
+        decimal_length: int = 3
+
+        # Special cases for multi-language countries where decimal separators can be used interchangeably. Mostly informally.
+        # Ex: South Africa, Namibia; Puerto Rico in ES; or in Canada for EN and FR.
+        # "me pidio $5.00 prestados" and "me pidio $5,00 prestados" -> currency $5
+        culture_regex: Pattern = RegExpUtility.get_safe_reg_exp(r'^(en|es|fr)(-)?\b', flags=regex.I | regex.S)
+
+        return ch == self.config.non_decimal_separator_char and not(distance <= decimal_length and culture_regex.match(culture.code))
+
+    def _get_digital_value(self, digits_str: str, power: int) -> Decimal:
         tmp: Decimal = Decimal(0)
         scale: Decimal = Decimal(10)
-        dot: bool = False
+        decimal_separator: bool = False
+        str_length: int = len(digits_str)
         negative: bool = False
-        fraction: bool = '/' in digitstr
+        fraction: bool = '/' in digits_str
+        index: int = 0
 
         call_stack: List[Decimal] = list()
 
-        for c in digitstr:
-            if not fraction and (c == self.config.non_decimal_separator_char or c == ' ' or c == Constants.NO_BREAK_SPACE):
+        for c in digits_str:
+
+            skippable_non_decimal = self.__skip_non_decimal_separator(c, str_length - index, self.config.culture_info)
+            index += 1
+
+            if not fraction and (c == ' ' or c == Constants.NO_BREAK_SPACE or skippable_non_decimal):
                 continue
 
             if c == ' ' or c == '/':
                 call_stack.append(tmp)
                 tmp = Decimal(0)
             elif c.isdigit():
-                if dot:
+                if decimal_separator:
                     tmp = getcontext().add(tmp, getcontext().multiply(scale, Decimal(c)))
                     scale = getcontext().multiply(scale, Decimal(0.1))
                 else:
                     tmp = getcontext().add(getcontext().multiply(tmp, scale), Decimal(c))
-            elif c == self.config.decimal_separator_char:
-                dot = True
+            elif c == self.config.decimal_separator_char or (not skippable_non_decimal and c == self.config.non_decimal_separator_char):
+                decimal_separator = True
                 scale = Decimal(0.1)
             elif c == '-':
                 negative = True

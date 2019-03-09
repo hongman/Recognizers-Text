@@ -9,6 +9,53 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
 {
     public class ItalianDateParserConfiguration : BaseOptionsConfiguration, IDateParserConfiguration
     {
+        public ItalianDateParserConfiguration(ICommonDateTimeParserConfiguration config)
+            : base(config.Options)
+        {
+            DateTokenPrefix = DateTimeDefinitions.DateTokenPrefix;
+            IntegerExtractor = config.IntegerExtractor;
+            OrdinalExtractor = config.OrdinalExtractor;
+            CardinalExtractor = config.CardinalExtractor;
+            NumberParser = config.NumberParser;
+            DurationExtractor = config.DurationExtractor;
+            DateExtractor = config.DateExtractor;
+            DurationParser = config.DurationParser;
+            DateRegexes = new ItalianDateExtractorConfiguration(this).DateRegexList;
+            OnRegex = ItalianDateExtractorConfiguration.OnRegex;
+            SpecialDayRegex = ItalianDateExtractorConfiguration.SpecialDayRegex;
+            SpecialDayWithNumRegex = ItalianDateExtractorConfiguration.SpecialDayWithNumRegex;
+            NextRegex = ItalianDateExtractorConfiguration.NextRegex;
+            ThisRegex = ItalianDateExtractorConfiguration.ThisRegex;
+            LastRegex = ItalianDateExtractorConfiguration.LastRegex;
+            UnitRegex = ItalianDateExtractorConfiguration.DateUnitRegex;
+            WeekDayRegex = ItalianDateExtractorConfiguration.WeekDayRegex;
+            StrictWeekDay = ItalianDateExtractorConfiguration.StrictWeekDay;
+            MonthRegex = ItalianDateExtractorConfiguration.MonthRegex;
+            WeekDayOfMonthRegex = ItalianDateExtractorConfiguration.WeekDayOfMonthRegex;
+            ForTheRegex = ItalianDateExtractorConfiguration.ForTheRegex;
+            WeekDayAndDayOfMothRegex = ItalianDateExtractorConfiguration.WeekDayAndDayOfMothRegex;
+            WeekDayAndDayRegex = ItalianDateExtractorConfiguration.WeekDayAndDayRegex;
+            RelativeMonthRegex = ItalianDateExtractorConfiguration.RelativeMonthRegex;
+            YearSuffix = ItalianDateExtractorConfiguration.YearSuffix;
+            RelativeWeekDayRegex = ItalianDateExtractorConfiguration.RelativeWeekDayRegex;
+            RelativeDayRegex = new Regex(DateTimeDefinitions.RelativeDayRegex, RegexOptions.Singleline);
+            NextPrefixRegex = new Regex(DateTimeDefinitions.NextPrefixRegex, RegexOptions.Singleline);
+            PreviousPrefixRegex = new Regex(DateTimeDefinitions.PreviousPrefixRegex, RegexOptions.Singleline);
+            UpcomingPrefixRegex = new Regex(DateTimeDefinitions.UpcomingPrefixRegex, RegexOptions.Singleline);
+            PastPrefixRegex = new Regex(DateTimeDefinitions.PastPrefixRegex, RegexOptions.Singleline);
+            DayOfMonth = config.DayOfMonth;
+            DayOfWeek = config.DayOfWeek;
+            MonthOfYear = config.MonthOfYear;
+            CardinalMap = config.CardinalMap;
+            UnitMap = config.UnitMap;
+            UtilityConfiguration = config.UtilityConfiguration;
+            SameDayTerms = DateTimeDefinitions.SameDayTerms.ToImmutableList();
+            PlusOneDayTerms = DateTimeDefinitions.PlusOneDayTerms.ToImmutableList();
+            PlusTwoDayTerms = DateTimeDefinitions.PlusTwoDayTerms.ToImmutableList();
+            MinusOneDayTerms = DateTimeDefinitions.MinusOneDayTerms.ToImmutableList();
+            MinusTwoDayTerms = DateTimeDefinitions.MinusTwoDayTerms.ToImmutableList();
+        }
+
         public string DateTokenPrefix { get; }
 
         public IExtractor IntegerExtractor { get; }
@@ -21,7 +68,7 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
 
         public IDateTimeExtractor DurationExtractor { get; }
 
-        public IDateTimeExtractor DateExtractor { get; }
+        public IDateExtractor DateExtractor { get; }
 
         public IDateTimeParser DurationParser { get; }
 
@@ -55,11 +102,23 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
 
         public Regex WeekDayAndDayOfMothRegex { get; }
 
+        public Regex WeekDayAndDayRegex { get; }
+
         public Regex RelativeMonthRegex { get; }
 
         public Regex YearSuffix { get; }
 
         public Regex RelativeWeekDayRegex { get; }
+
+        public Regex RelativeDayRegex { get; }
+
+        public Regex NextPrefixRegex { get; }
+
+        public Regex PreviousPrefixRegex { get; }
+
+        public Regex UpcomingPrefixRegex { get; }
+
+        public Regex PastPrefixRegex { get; }
 
         public IImmutableDictionary<string, int> DayOfMonth { get; }
 
@@ -69,77 +128,17 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
 
         public IImmutableDictionary<string, int> CardinalMap { get; }
 
+        public IImmutableList<string> SameDayTerms { get; }
+
+        public IImmutableList<string> PlusOneDayTerms { get; }
+
+        public IImmutableList<string> MinusOneDayTerms { get; }
+
+        public IImmutableList<string> PlusTwoDayTerms { get; }
+
+        public IImmutableList<string> MinusTwoDayTerms { get; }
+
         public IDateTimeUtilityConfiguration UtilityConfiguration { get; }
-
-        public ItalianDateParserConfiguration(ICommonDateTimeParserConfiguration config) : base(config.Options)
-        {
-            DateTokenPrefix = DateTimeDefinitions.DateTokenPrefix;
-            IntegerExtractor = config.IntegerExtractor;
-            OrdinalExtractor = config.OrdinalExtractor;
-            CardinalExtractor = config.CardinalExtractor;
-            NumberParser = config.NumberParser;
-            DurationExtractor = config.DurationExtractor;
-            DateExtractor = config.DateExtractor;
-            DurationParser = config.DurationParser;
-            DateRegexes = new ItalianDateExtractorConfiguration(this).DateRegexList;
-            OnRegex = ItalianDateExtractorConfiguration.OnRegex;
-            SpecialDayRegex = ItalianDateExtractorConfiguration.SpecialDayRegex;
-            SpecialDayWithNumRegex = ItalianDateExtractorConfiguration.SpecialDayWithNumRegex;
-            NextRegex = ItalianDateExtractorConfiguration.NextRegex;
-            ThisRegex = ItalianDateExtractorConfiguration.ThisRegex;
-            LastRegex = ItalianDateExtractorConfiguration.LastRegex;
-            UnitRegex = ItalianDateExtractorConfiguration.DateUnitRegex;
-            WeekDayRegex = ItalianDateExtractorConfiguration.WeekDayRegex;
-            StrictWeekDay = ItalianDateExtractorConfiguration.StrictWeekDay;
-            MonthRegex = ItalianDateExtractorConfiguration.MonthRegex;
-            WeekDayOfMonthRegex = ItalianDateExtractorConfiguration.WeekDayOfMonthRegex;
-            ForTheRegex = ItalianDateExtractorConfiguration.ForTheRegex;
-            WeekDayAndDayOfMothRegex = ItalianDateExtractorConfiguration.WeekDayAndDayOfMothRegex;
-            RelativeMonthRegex = ItalianDateExtractorConfiguration.RelativeMonthRegex;
-            YearSuffix = ItalianDateExtractorConfiguration.YearSuffix;
-            RelativeWeekDayRegex = ItalianDateExtractorConfiguration.RelativeWeekDayRegex;
-            DayOfMonth = config.DayOfMonth;
-            DayOfWeek = config.DayOfWeek;
-            MonthOfYear = config.MonthOfYear;
-            CardinalMap = config.CardinalMap;
-            UnitMap = config.UnitMap;
-            UtilityConfiguration = config.UtilityConfiguration;
-        }
-
-        public int GetSwiftDay(string text)
-        {
-            var trimmedText = text.Trim().ToLowerInvariant();
-
-            var swift = 0;
-            if (trimmedText.Equals("aujourd'hui") || trimmedText.Equals("auj")) //today
-            {
-                swift = 0;
-            }
-            else if (trimmedText.Equals("demain") || trimmedText.Equals("a2m1") || 
-                     trimmedText.Equals("lendemain") || trimmedText.Equals("jour suivant"))
-            {
-                swift = 1;
-            }
-            else if (trimmedText.Equals("hier")) // yesterday
-            {
-                swift = -1;
-            }
-            else if (trimmedText.EndsWith("après demain") || // day after tomorrow
-                     trimmedText.EndsWith("après-demain"))
-            {
-                swift = 2;
-            }
-            else if (trimmedText.StartsWith("avant-hier") || // day before yesterday
-                     trimmedText.StartsWith("avant hier"))
-            {
-                swift = -2;
-            }
-            else if (trimmedText.EndsWith("dernier")) // dernier
-            {
-                swift = -1;
-            }
-            return swift;
-        }
 
         public int GetSwiftMonth(string text)
         {
@@ -154,14 +153,20 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
             {
                 swift = -1;
             }
+
             return swift;
         }
 
         public bool IsCardinalLast(string text)
         {
             var trimmedText = text.Trim().ToLowerInvariant();
-            return (trimmedText.Equals("dernière") || trimmedText.Equals("dernières") ||
-                    trimmedText.Equals("derniere") || trimmedText.Equals("dernieres"));
+            return trimmedText.Equals("dernière") || trimmedText.Equals("dernières") ||
+                    trimmedText.Equals("derniere") || trimmedText.Equals("dernieres");
+        }
+
+        public string Normalize(string text)
+        {
+            return text;
         }
     }
 }

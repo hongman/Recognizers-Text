@@ -8,7 +8,7 @@ namespace Microsoft.Recognizers.Text.DateTime
     public class BaseSetParser : IDateTimeParser
     {
         public static readonly string ParserName = Constants.SYS_DATETIME_SET;
-        
+
         private readonly ISetParserConfiguration config;
 
         public BaseSetParser(ISetParserConfiguration configuration)
@@ -73,12 +73,12 @@ namespace Microsoft.Recognizers.Text.DateTime
                 {
                     innerResult.FutureResolution = new Dictionary<string, string>
                     {
-                        {TimeTypeConstants.SET, (string) innerResult.FutureValue}
+                        { TimeTypeConstants.SET, (string)innerResult.FutureValue },
                     };
 
                     innerResult.PastResolution = new Dictionary<string, string>
                     {
-                        {TimeTypeConstants.SET, (string) innerResult.PastValue}
+                        { TimeTypeConstants.SET, (string)innerResult.PastValue },
                     };
 
                     value = innerResult;
@@ -93,11 +93,16 @@ namespace Microsoft.Recognizers.Text.DateTime
                 Type = er.Type,
                 Data = er.Data,
                 Value = value,
-                TimexStr = value == null ? "" : ((DateTimeResolutionResult) value).Timex,
-                ResolutionStr = ""
+                TimexStr = value == null ? string.Empty : ((DateTimeResolutionResult)value).Timex,
+                ResolutionStr = string.Empty,
             };
 
             return ret;
+        }
+
+        public List<DateTimeParseResult> FilterResults(string query, List<DateTimeParseResult> candidateResults)
+        {
+            return candidateResults;
         }
 
         private DateTimeResolutionResult ParseEachDuration(string text, DateObject refDate)
@@ -125,6 +130,7 @@ namespace Microsoft.Recognizers.Text.DateTime
         private DateTimeResolutionResult ParseEachUnit(string text)
         {
             var ret = new DateTimeResolutionResult();
+
             // handle "daily", "weekly"
             var match = this.config.PeriodicRegex.Match(text);
             if (match.Success)
@@ -142,10 +148,11 @@ namespace Microsoft.Recognizers.Text.DateTime
             }
 
             // handle "each month"
-            match = this.config.EachUnitRegex.Match(text);
-            if (match.Success && match.Length == text.Length)
+            var exactMatch = this.config.EachUnitRegex.MatchExact(text, trim: true);
+
+            if (exactMatch.Success)
             {
-                var sourceUnit = match.Groups["unit"].Value;
+                var sourceUnit = exactMatch.Groups["unit"].Value;
                 if (!string.IsNullOrEmpty(sourceUnit) && this.config.UnitMap.ContainsKey(sourceUnit))
                 {
                     if (!this.config.GetMatchedUnitTimex(sourceUnit, out string timex))
@@ -153,8 +160,8 @@ namespace Microsoft.Recognizers.Text.DateTime
                         return ret;
                     }
 
-                    //"handle every other month"
-                    if (match.Groups["other"].Success)
+                    // "handle every other month"
+                    if (exactMatch.Groups["other"].Success)
                     {
                         timex = timex.Replace("1", "2");
                     }
@@ -178,7 +185,7 @@ namespace Microsoft.Recognizers.Text.DateTime
                 return ret;
             }
 
-            var afterStr = text.Replace(ers[0].Text, "");
+            var afterStr = text.Replace(ers[0].Text, string.Empty);
             var match = this.config.EachDayRegex.Match(afterStr);
             if (match.Success)
             {
@@ -196,6 +203,7 @@ namespace Microsoft.Recognizers.Text.DateTime
         {
             var ret = new DateTimeResolutionResult();
             List<ExtractResult> ers = null;
+
             // remove key words of set type from text
             var match = config.SetEachRegex.Match(text);
             var success = false;
@@ -232,11 +240,6 @@ namespace Microsoft.Recognizers.Text.DateTime
             }
 
             return ret;
-        }
-
-        public List<DateTimeParseResult> FilterResults(string query, List<DateTimeParseResult> candidateResults)
-        {
-            return candidateResults;
         }
     }
 }

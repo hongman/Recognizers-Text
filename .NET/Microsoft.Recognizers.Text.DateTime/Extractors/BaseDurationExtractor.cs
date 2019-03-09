@@ -45,6 +45,18 @@ namespace Microsoft.Recognizers.Text.DateTime
             return rets;
         }
 
+        private static List<Token> GetTokenFromRegex(Regex regex, string text)
+        {
+          var ret = new List<Token>();
+          var matches = regex.Matches(text);
+          foreach (Match match in matches)
+          {
+            ret.Add(new Token(match.Index, match.Index + match.Length));
+          }
+
+          return ret;
+        }
+
         // handle cases look like: {more than | less than} {duration}?
         private List<ExtractResult> TagInequalityPrefix(string text, List<ExtractResult> ers)
         {
@@ -53,10 +65,10 @@ namespace Microsoft.Recognizers.Text.DateTime
                 var beforeString = text.Substring(0, (int)er.Start);
                 bool isInequalityPrefixMatched = false;
 
-                var match = config.MoreThanRegex.Match(beforeString);
+                var match = config.MoreThanRegex.MatchEnd(beforeString, trim: true);
 
                 // The second condition is necessary so for "1 week" in "more than 4 days and less than 1 week", it will not be tagged incorrectly as "more than"
-                if (match.Success && match.Index + match.Length == beforeString.Trim().Length)
+                if (match.Success)
                 {
                     er.Data = Constants.MORE_THAN_MOD;
                     isInequalityPrefixMatched = true;
@@ -64,8 +76,9 @@ namespace Microsoft.Recognizers.Text.DateTime
 
                 if (!isInequalityPrefixMatched)
                 {
-                    match = config.LessThanRegex.Match(beforeString);
-                    if (match.Success && match.Index + match.Length == beforeString.Trim().Length)
+                    match = config.LessThanRegex.MatchEnd(beforeString, trim: true);
+
+                    if (match.Success)
                     {
                         er.Data = Constants.LESS_THAN_MOD;
                         isInequalityPrefixMatched = true;
@@ -82,7 +95,7 @@ namespace Microsoft.Recognizers.Text.DateTime
 
             return ers;
         }
-        
+
         // handle cases look like: {number} {unit}? and {an|a} {half|quarter} {unit}?
         // define the part "and {an|a} {half|quarter}" as Suffix
         private List<Token> NumberWithUnitAndSuffix(string text, List<Token> ers)
@@ -91,12 +104,14 @@ namespace Microsoft.Recognizers.Text.DateTime
             foreach (var er in ers)
             {
                 var afterStr = text.Substring(er.Start + er.Length);
-                var match = this.config.SuffixAndRegex.Match(afterStr);
-                if (match.Success && match.Index == 0)
+                var match = this.config.SuffixAndRegex.MatchBegin(afterStr, trim: true);
+
+                if (match.Success)
                 {
                     ret.Add(new Token(er.Start, (er.Start + er.Length) + match.Length));
                 }
             }
+
             return ret;
         }
 
@@ -108,8 +123,9 @@ namespace Microsoft.Recognizers.Text.DateTime
             foreach (var er in ers)
             {
                 var afterStr = text.Substring(er.Start + er.Length ?? 0);
-                var match = this.config.FollowedUnit.Match(afterStr);
-                if (match.Success && match.Index == 0)
+                var match = this.config.FollowedUnit.MatchBegin(afterStr, trim: true);
+
+                if (match.Success)
                 {
                     ret.Add(new Token(er.Start ?? 0, (er.Start + er.Length ?? 0) + match.Length));
                 }
@@ -127,10 +143,11 @@ namespace Microsoft.Recognizers.Text.DateTime
             return ret;
         }
 
-        // handle cases that don't contain nubmer
+        // handle cases that don't contain number
         private List<Token> ImplicitDuration(string text)
         {
             var ret = new List<Token>();
+
             // handle "all day", "all year"
             ret.AddRange(GetTokenFromRegex(config.AllRegex, text));
 
@@ -149,17 +166,6 @@ namespace Microsoft.Recognizers.Text.DateTime
             return ret;
         }
 
-        private static List<Token> GetTokenFromRegex(Regex regex, string text)
-        {
-            var ret = new List<Token>();
-            var matches = regex.Matches(text);
-            foreach (Match match in matches)
-            {
-                ret.Add(new Token(match.Index, match.Index + match.Length));
-            }
-            return ret;
-        }
-
         private List<ExtractResult> MergeMultipleDuration(string text, List<ExtractResult> extractorResults)
         {
             if (extractorResults.Count <= 1)
@@ -167,8 +173,8 @@ namespace Microsoft.Recognizers.Text.DateTime
                 return extractorResults;
             }
 
-            var UnitMap = this.config.UnitMap;
-            var UnitValueMap = this.config.UnitValueMap;
+            var unitMap = this.config.UnitMap;
+            var unitValueMap = this.config.UnitValueMap;
             var unitRegex = this.config.DurationUnitRegex;
             List<ExtractResult> ret = new List<ExtractResult>();
 
@@ -179,12 +185,12 @@ namespace Microsoft.Recognizers.Text.DateTime
             {
                 string curUnit = null;
                 var unitMatch = unitRegex.Match(extractorResults[firstExtractionIndex].Text);
-                
-                if (unitMatch.Success && UnitMap.ContainsKey(unitMatch.Groups["unit"].ToString()))
+
+                if (unitMatch.Success && unitMap.ContainsKey(unitMatch.Groups["unit"].ToString()))
                 {
                     curUnit = unitMatch.Groups["unit"].ToString();
                     totalUnit++;
-                    if (DurationParsingUtil.IsTimeDurationUnit(UnitMap[curUnit]))
+                    if (DurationParsingUtil.IsTimeDurationUnit(unitMap[curUnit]))
                     {
                         timeUnit++;
                     }
@@ -207,20 +213,20 @@ namespace Microsoft.Recognizers.Text.DateTime
                     if (match.Success)
                     {
                         unitMatch = unitRegex.Match(extractorResults[secondExtractionIndex].Text);
-                        if (unitMatch.Success && UnitMap.ContainsKey(unitMatch.Groups["unit"].ToString()))
+                        if (unitMatch.Success && unitMap.ContainsKey(unitMatch.Groups["unit"].ToString()))
                         {
                             var nextUnitStr = unitMatch.Groups["unit"].ToString();
-                            if (UnitValueMap[nextUnitStr] != UnitValueMap[curUnit])
+                            if (unitValueMap[nextUnitStr] != unitValueMap[curUnit])
                             {
                                 valid = true;
-                                if (UnitValueMap[nextUnitStr] < UnitValueMap[curUnit])
+                                if (unitValueMap[nextUnitStr] < unitValueMap[curUnit])
                                 {
                                     curUnit = nextUnitStr;
                                 }
                             }
 
                             totalUnit++;
-                            if (DurationParsingUtil.IsTimeDurationUnit(UnitMap[nextUnitStr]))
+                            if (DurationParsingUtil.IsTimeDurationUnit(unitMap[nextUnitStr]))
                             {
                                 timeUnit++;
                             }
@@ -240,7 +246,7 @@ namespace Microsoft.Recognizers.Text.DateTime
                     var node = new ExtractResult();
                     node.Start = extractorResults[firstExtractionIndex].Start;
                     node.Length = extractorResults[secondExtractionIndex - 1].Start + extractorResults[secondExtractionIndex - 1].Length - node.Start;
-                    node.Text = text.Substring(node.Start?? 0, node.Length?? 0);
+                    node.Text = text.Substring(node.Start ?? 0, node.Length ?? 0);
                     node.Type = extractorResults[firstExtractionIndex].Type;
 
                     // add multiple duration type to extract result
@@ -257,6 +263,7 @@ namespace Microsoft.Recognizers.Text.DateTime
                     {
                         type = Constants.MultipleDuration_DateTime;
                     }
+
                     node.Data = type;
 
                     ret.Add(node);

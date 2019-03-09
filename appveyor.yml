@@ -22,31 +22,53 @@ clone_depth: 1
 branches:
   only:
   - master
-  - feature/*
+  - /[Ff]eature\/.+/
+  - /[Ff]ix\/.+/
+  - /[Hh]otfix\/.+/
 
 build:
   parallel: true
 
 build_script:
 - cmd: >-
-    cd .NET\
+    CALL wmic os get caption, version, osarchitecture
 
+    CALL node -v
+
+    CALL npm -v
+
+    CALL node -e "console.log(process.versions.v8);"
+
+    cd .NET\
+    
     build.ci.cmd
 
     cd ..\JavaScript\
-
-    build.cmd
-
+    
+    build.ci.cmd
+    
     cd ..\Python\
-
-    build.cmd
+    
+    build.ci.cmd
 
     cd ..\java\
+    
+    build.ci.cmd
+    
+test:
+          
+test_script:
+    cd ..\.NET\
+    
+    tests.ci.cmd
 
-    mvn package
-
-# disable automatic tests
-test: off
+    cd ..\JavaScript\
+    
+    tests.ci.cmd
+    
+    cd ..\java\
+    
+    tests.ci.cmd
 
 artifacts:
     - path: '**\*Microsoft.Recognizers*.nupkg'

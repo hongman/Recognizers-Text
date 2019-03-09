@@ -27,36 +27,6 @@ namespace Microsoft.Recognizers.Text.Sequence
         {
         }
 
-        public IModel GetPhoneNumberModel(string culture = null, bool fallbackToDefaultCulture = true)
-        {
-            return GetModel<PhoneNumberModel>(Culture.English, fallbackToDefaultCulture);
-        }
-
-        public IModel GetIpAddressModel(string culture = null, bool fallbackToDefaultCulture = true)
-        {
-            return GetModel<IpAddressModel>(Culture.English, fallbackToDefaultCulture);
-        }
-
-        public IModel GetMentionModel(string culture = null, bool fallbackToDefaultCulture = true)
-        {
-            return GetModel<MentionModel>(Culture.English, fallbackToDefaultCulture);
-        }
-
-        public IModel GetHashtagModel(string culture = null, bool fallbackToDefaultCulture = true)
-        {
-            return GetModel<HashtagModel>(Culture.English, fallbackToDefaultCulture);
-        }
-
-        public IModel GetEmailModel(string culture = null, bool fallbackToDefaultCulture = true)
-        {
-            return GetModel<EmailModel>(Culture.English, fallbackToDefaultCulture);
-        }
-
-        public IModel GetURLModel(string culture = null, bool fallbackToDefaultCulture = true)
-        {
-            return GetModel<URLModel>(Culture.English, fallbackToDefaultCulture);
-        }
-
         public static List<ModelResult> RecognizePhoneNumber(string query, string culture, SequenceOptions options = SequenceOptions.None, bool fallbackToDefaultCulture = true)
         {
             return RecognizeByModel(recognizer => recognizer.GetPhoneNumberModel(culture, fallbackToDefaultCulture), query, options);
@@ -87,11 +57,44 @@ namespace Microsoft.Recognizers.Text.Sequence
             return RecognizeByModel(recognizer => recognizer.GetURLModel(culture, fallbackToDefaultCulture), query, options);
         }
 
-        private static List<ModelResult> RecognizeByModel(Func<SequenceRecognizer, IModel> getModelFunc, string query, SequenceOptions options)
+        public static List<ModelResult> RecognizeGUID(string query, string culture, SequenceOptions options = SequenceOptions.None, bool fallbackToDefaultCulture = true)
         {
-            var recognizer = new SequenceRecognizer(options);
-            var model = getModelFunc(recognizer);
-            return model.Parse(query);
+            return RecognizeByModel(recognizer => recognizer.GetGUIDModel(culture, fallbackToDefaultCulture), query, options);
+        }
+
+        public IModel GetPhoneNumberModel(string culture = null, bool fallbackToDefaultCulture = true)
+        {
+            return GetModel<PhoneNumberModel>(Culture.English, fallbackToDefaultCulture);
+        }
+
+        public IModel GetIpAddressModel(string culture = null, bool fallbackToDefaultCulture = true)
+        {
+            return GetModel<IpAddressModel>(Culture.English, fallbackToDefaultCulture);
+        }
+
+        public IModel GetMentionModel(string culture = null, bool fallbackToDefaultCulture = true)
+        {
+            return GetModel<MentionModel>(Culture.English, fallbackToDefaultCulture);
+        }
+
+        public IModel GetHashtagModel(string culture = null, bool fallbackToDefaultCulture = true)
+        {
+            return GetModel<HashtagModel>(Culture.English, fallbackToDefaultCulture);
+        }
+
+        public IModel GetEmailModel(string culture = null, bool fallbackToDefaultCulture = true)
+        {
+            return GetModel<EmailModel>(Culture.English, fallbackToDefaultCulture);
+        }
+
+        public IModel GetURLModel(string culture = null, bool fallbackToDefaultCulture = true)
+        {
+            return GetModel<URLModel>(Culture.English, fallbackToDefaultCulture);
+        }
+
+        public IModel GetGUIDModel(string culture = null, bool fallbackToDefaultCulture = true)
+        {
+            return GetModel<GUIDModel>(Culture.English, fallbackToDefaultCulture);
         }
 
         protected override void InitializeConfiguration()
@@ -119,6 +122,17 @@ namespace Microsoft.Recognizers.Text.Sequence
             RegisterModel<URLModel>(
                 Culture.English,
                 (options) => new URLModel(new URLParser(), new URLExtractor()));
+
+            RegisterModel<GUIDModel>(
+                Culture.English,
+                (options) => new GUIDModel(new GUIDParser(), new GUIDExtractor()));
+        }
+
+        private static List<ModelResult> RecognizeByModel(Func<SequenceRecognizer, IModel> getModelFunc, string query, SequenceOptions options)
+        {
+            var recognizer = new SequenceRecognizer(options);
+            var model = getModelFunc(recognizer);
+            return model.Parse(query);
         }
     }
 }

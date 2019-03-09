@@ -9,36 +9,37 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
         public static readonly string ExtractorName = Constants.SYS_DATETIME_SET;
 
         public static readonly Regex SetUnitRegex =
-            new Regex(DateTimeDefinitions.DurationUnitRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            new Regex(DateTimeDefinitions.DurationUnitRegex, RegexOptions.Singleline);
 
-        public static readonly Regex PeriodicRegex = 
+        public static readonly Regex PeriodicRegex =
             new Regex(
-                DateTimeDefinitions.PeriodicRegex, // TODO: Decide between adjective and adverb, i.e monthly - 'mensuel' vs 'mensuellement' 
-                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                DateTimeDefinitions.PeriodicRegex, // TODO: Decide between adjective and adverb, i.e monthly - 'mensuel' vs 'mensuellement'
+                RegexOptions.Singleline);
 
         public static readonly Regex EachUnitRegex = new Regex(
             DateTimeDefinitions.EachUnitRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            RegexOptions.Singleline);
 
         public static readonly Regex EachPrefixRegex = new Regex(
             DateTimeDefinitions.EachPrefixRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            RegexOptions.Singleline);
 
         public static readonly Regex EachDayRegex = new Regex(
             DateTimeDefinitions.EachDayRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            RegexOptions.Singleline);
 
         public static readonly Regex SetLastRegex = new Regex(
             DateTimeDefinitions.SetLastRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            RegexOptions.Singleline);
 
         public static readonly Regex SetWeekDayRegex =
-            new Regex(DateTimeDefinitions.SetWeekDayRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            new Regex(DateTimeDefinitions.SetWeekDayRegex, RegexOptions.Singleline);
 
         public static readonly Regex SetEachRegex =
-            new Regex(DateTimeDefinitions.SetEachRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            new Regex(DateTimeDefinitions.SetEachRegex, RegexOptions.Singleline);
 
-        public ItalianSetExtractorConfiguration(IOptionsConfiguration config) : base(config)
+        public ItalianSetExtractorConfiguration(IOptionsConfiguration config)
+            : base(config)
         {
             DurationExtractor = new BaseDurationExtractor(new ItalianDurationExtractorConfiguration(this));
             TimeExtractor = new BaseTimeExtractor(new ItalianTimeExtractorConfiguration(this));
@@ -53,7 +54,7 @@ namespace Microsoft.Recognizers.Text.DateTime.Italian
 
         public IDateTimeExtractor TimeExtractor { get; }
 
-        public IDateTimeExtractor DateExtractor { get; }
+        public IDateExtractor DateExtractor { get; }
 
         public IDateTimeExtractor DateTimeExtractor { get; }
 

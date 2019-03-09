@@ -1403,7 +1403,7 @@
     "Input": "10G",
     "Results": [
       {
-        "Text": "10G",
+        "Text": "10g",
         "TypeName": "number",
         "Resolution": {
           "value": "10000000000"
@@ -2567,6 +2567,62 @@
         },
         "Start": 16,
         "End": 17
+      }
+    ]
+  },
+  {
+    "Input": "En algunos países puedes escribir informalmente 5.00 or 5,00.",
+    "NotSupported": "java",
+    "Results": [
+      {
+        "Text": "5.00",
+        "Start": 48,
+        "End": 51,
+        "TypeName": "number",
+        "Resolution": {
+          "value": "5"
+        }
+      },
+      {
+        "Text": "5,00",
+        "Start": 56,
+        "End": 59,
+        "TypeName": "number",
+        "Resolution": {
+          "value": "5"
+        }
+      }
+    ]
+  },
+  {
+    "Input": "1&123 deben ser reconocidos como dos números",
+    "Results": [
+      {
+        "Text": "1",
+        "Start": 0,
+        "End": 0,
+        "TypeName": "number",
+        "Resolution": {
+          "value": "1"
+        }
+      },
+      {
+        "Text": "123",
+        "Start": 2,
+        "End": 4,
+        "TypeName": "number",
+        "Resolution": {
+          "value": "123"
+        }
+      },
+      {
+        "Text": "dos",
+        "Start": 33,
+        "End": 35,
+        "TypeName": "number",
+        "Resolution": {
+          "value": "2"
+        }
       }
     ]
   }

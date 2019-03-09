@@ -4,6 +4,7 @@ import { Constants } from "../constants";
 import { INumberWithUnitExtractorConfiguration } from "../extractors";
 import { BaseNumberWithUnitParserConfiguration } from "../parsers";
 import { PortugueseNumericWithUnit } from "../../resources/portugueseNumericWithUnit";
+import { BaseUnits } from "../../resources/baseUnits";
 
 export abstract class PortugueseNumberWithUnitExtractorConfiguration implements INumberWithUnitExtractorConfiguration {
     abstract readonly suffixList: ReadonlyMap<string, string>;
@@ -17,6 +18,8 @@ export abstract class PortugueseNumberWithUnitExtractorConfiguration implements 
     readonly buildSuffix: string;
     readonly connectorToken: string;
     readonly compoundUnitConnectorRegex: RegExp;
+    readonly nonUnitRegex: RegExp;
+    readonly ambiguousUnitNumberMultiplierRegex: RegExp;
 
     constructor(ci: CultureInfo) {
         this.cultureInfo = ci;
@@ -26,6 +29,7 @@ export abstract class PortugueseNumberWithUnitExtractorConfiguration implements 
         this.buildSuffix = PortugueseNumericWithUnit.BuildSuffix;
         this.connectorToken = PortugueseNumericWithUnit.ConnectorToken;
         this.compoundUnitConnectorRegex = RegExpUtility.getSafeRegExp(PortugueseNumericWithUnit.CompoundUnitConnectorRegex);
+        this.nonUnitRegex = RegExpUtility.getSafeRegExp(BaseUnits.PmNonUnitRegex);
     }
 }
 

@@ -120,7 +120,7 @@ class EnglishDateParserConfiguration(DateParserConfiguration):
     # If the spanish date parser need the same regexes, they should be extracted
     _relative_day_regex = RegExpUtility.get_safe_reg_exp(EnglishDateTime.RelativeDayRegex)
     _next_prefix_regex = RegExpUtility.get_safe_reg_exp(EnglishDateTime.NextPrefixRegex)
-    _past_prefix_regex = RegExpUtility.get_safe_reg_exp(EnglishDateTime.PastPrefixRegex)
+    _past_prefix_regex = RegExpUtility.get_safe_reg_exp(EnglishDateTime.PreviousPrefixRegex)
 
     def __init__(self, config: BaseDateParserConfiguration):
         self._ordinal_extractor = config.ordinal_extractor
@@ -141,9 +141,11 @@ class EnglishDateParserConfiguration(DateParserConfiguration):
             RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor4),
             RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor5),
             RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor6),
-            RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor7),
+            RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor7L),
+            RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor7S),
             RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor8),
-            RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor9),
+            RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor9L),
+            RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractor9S),
             RegExpUtility.get_safe_reg_exp(EnglishDateTime.DateExtractorA),
         ]
         self._on_regex = RegExpUtility.get_safe_reg_exp(EnglishDateTime.OnRegex)
@@ -175,6 +177,10 @@ class EnglishDateParserConfiguration(DateParserConfiguration):
             swift = 2
         elif trimmed_text.endswith('day before yesterday'):
             swift = -2
+        elif trimmed_text.endswith('day after'):
+            swift = 1
+        elif trimmed_text.endswith('day before'):
+            swift = -1
         elif matches:
             swift = self.get_swift(source)
 

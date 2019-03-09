@@ -109,7 +109,7 @@ class SpanishDatePeriodParserConfiguration(DatePeriodParserConfiguration):
         return self._next_prefix_regex
 
     @property
-    def past_prefix_regex(self) -> Pattern:
+    def previous_prefix_regex(self) -> Pattern:
         return self._past_prefix_regex
 
     @property
@@ -127,6 +127,10 @@ class SpanishDatePeriodParserConfiguration(DatePeriodParserConfiguration):
     @property
     def week_with_week_day_range_regex(self) -> Pattern:
         return self._week_with_week_day_range_regex
+
+    @property
+    def unspecific_end_of_range_regex(self) -> Pattern:
+        return self._unspecific_end_of_range_regex
 
     @property
     def token_before_date(self) -> str:
@@ -185,9 +189,10 @@ class SpanishDatePeriodParserConfiguration(DatePeriodParserConfiguration):
         self._rest_of_date_regex = RegExpUtility.get_safe_reg_exp(SpanishDateTime.RestOfDateRegex)
         self._later_early_period_regex = RegExpUtility.get_safe_reg_exp(SpanishDateTime.LaterEarlyPeriodRegex)
         self._week_with_week_day_range_regex = RegExpUtility.get_safe_reg_exp(SpanishDateTime.WeekWithWeekDayRangeRegex)
+        self._unspecific_end_of_range_regex = RegExpUtility.get_safe_reg_exp(SpanishDateTime.UnspecificEndOfRangeRegex)
 
         self._next_prefix_regex = RegExpUtility.get_safe_reg_exp(SpanishDateTime.NextPrefixRegex)
-        self._past_prefix_regex = RegExpUtility.get_safe_reg_exp(SpanishDateTime.PastPrefixRegex)
+        self._past_prefix_regex = RegExpUtility.get_safe_reg_exp(SpanishDateTime.PreviousPrefixRegex)
         self._this_prefix_regex = RegExpUtility.get_safe_reg_exp(SpanishDateTime.ThisPrefixRegex)
 
         self._in_connector_regex = config.utility_configuration.in_connector_regex
@@ -203,7 +208,7 @@ class SpanishDatePeriodParserConfiguration(DatePeriodParserConfiguration):
 
         if self.next_prefix_regex.search(trimmed_source):
             swift = 1
-        elif self.past_prefix_regex.search(trimmed_source):
+        elif self.previous_prefix_regex.search(trimmed_source):
             swift = -1
 
         return swift
@@ -215,7 +220,7 @@ class SpanishDatePeriodParserConfiguration(DatePeriodParserConfiguration):
         if self.next_prefix_regex.search(trimmed_source):
             swift = 1
 
-        if self.past_prefix_regex.search(trimmed_source):
+        if self.previous_prefix_regex.search(trimmed_source):
             swift = -1
         elif self.this_prefix_regex.search(trimmed_source):
             swift = 0
@@ -228,28 +233,29 @@ class SpanishDatePeriodParserConfiguration(DatePeriodParserConfiguration):
 
     def is_year_to_date(self, source: str) -> bool:
         trimmed_source = source.strip().lower()
-        return trimmed_source == 'año a la fecha' or trimmed_source == 'años a la fecha'
+        return any(trimmed_source == o for o in SpanishDateTime.YearToDateTerms)
 
     def is_month_to_date(self, source: str) -> bool:
         trimmed_source = source.strip().lower()
-        return trimmed_source.endswith('mes a la fecha') or trimmed_source.endswith('meses a la fecha')
+        return any(trimmed_source.endswith(o) for o in SpanishDateTime.MonthToDateTerms)
 
     def is_week_only(self, source: str) -> bool:
         trimmed_source = source.strip().lower()
-        return trimmed_source.endswith('semana') and not trimmed_source.endswith('fin de semana')
+        return any(trimmed_source.endswith(o) for o in SpanishDateTime.WeekTerms) and not\
+            any(trimmed_source.endswith(o) for o in SpanishDateTime.WeekendTerms)
 
     def is_weekend(self, source: str) -> bool:
         trimmed_source = source.strip().lower()
-        return trimmed_source.endswith('fin de semana')
+        return any(trimmed_source.endswith(o) for o in SpanishDateTime.WeekendTerms)
 
     def is_month_only(self, source: str) -> bool:
         trimmed_source = source.strip().lower()
-        return trimmed_source.endswith('mes') or trimmed_source.endswith('meses')
+        return any(trimmed_source.endswith(o) for o in SpanishDateTime.MonthTerms)
 
     def is_year_only(self, source: str) -> bool:
         trimmed_source = source.strip().lower()
-        return trimmed_source.endswith('año') or trimmed_source.endswith('años')
+        return any(trimmed_source.endswith(o) for o in SpanishDateTime.YearTerms)
 
     def is_last_cardinal(self, source: str) -> bool:
         trimmed_source = source.strip().lower()
-        return not self.past_prefix_regex.search(trimmed_source) is None
+        return not self.previous_prefix_regex.search(trimmed_source) is None

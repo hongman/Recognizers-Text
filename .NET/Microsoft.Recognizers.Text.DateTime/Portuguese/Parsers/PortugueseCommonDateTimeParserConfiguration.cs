@@ -9,7 +9,8 @@ namespace Microsoft.Recognizers.Text.DateTime.Portuguese
 {
     public class PortugueseCommonDateTimeParserConfiguration : BaseDateParserConfiguration
     {
-        public PortugueseCommonDateTimeParserConfiguration(IOptionsConfiguration config) : base(config)
+        public PortugueseCommonDateTimeParserConfiguration(IOptionsConfiguration config)
+            : base(config)
         {
             UtilityConfiguration = new PortugueseDatetimeUtilityConfiguration();
 
@@ -25,8 +26,8 @@ namespace Microsoft.Recognizers.Text.DateTime.Portuguese
             SpecialDecadeCases = DateTimeDefinitions.SpecialDecadeCases.ToImmutableDictionary();
 
             CardinalExtractor = Number.Portuguese.CardinalExtractor.GetInstance();
-            IntegerExtractor = new IntegerExtractor();
-            OrdinalExtractor = new OrdinalExtractor();
+            IntegerExtractor = Number.Portuguese.IntegerExtractor.GetInstance();
+            OrdinalExtractor = Number.Portuguese.OrdinalExtractor.GetInstance();
 
             NumberParser = new BaseNumberParser(new PortugueseNumberParserConfiguration());
             DateExtractor = new BaseDateExtractor(new PortugueseDateExtractorConfiguration(this));

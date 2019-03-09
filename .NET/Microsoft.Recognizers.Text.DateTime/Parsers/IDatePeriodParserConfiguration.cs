@@ -1,15 +1,13 @@
 ﻿using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 
-using Microsoft.Recognizers.Text.Number;
-
 namespace Microsoft.Recognizers.Text.DateTime
 {
     public interface IDatePeriodParserConfiguration : IOptionsConfiguration
     {
         string TokenBeforeDate { get; }
 
-        IDateTimeExtractor DateExtractor { get; }
+        IDateExtractor DateExtractor { get; }
 
         IExtractor CardinalExtractor { get; }
 
@@ -73,7 +71,7 @@ namespace Microsoft.Recognizers.Text.DateTime
 
         Regex NextPrefixRegex { get; }
 
-        Regex PastPrefixRegex { get; }
+        Regex PreviousPrefixRegex { get; }
 
         Regex ThisPrefixRegex { get; }
 
@@ -104,6 +102,10 @@ namespace Microsoft.Recognizers.Text.DateTime
         Regex MoreThanRegex { get; }
 
         Regex CenturySuffixRegex { get; }
+
+        Regex RelativeRegex { get; }
+
+        Regex UnspecificEndOfRangeRegex { get; }
 
         IImmutableDictionary<string, string> UnitMap { get; }
 

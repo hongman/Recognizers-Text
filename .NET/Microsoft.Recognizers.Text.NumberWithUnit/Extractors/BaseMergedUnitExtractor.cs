@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
 
 namespace Microsoft.Recognizers.Text.NumberWithUnit
 {
@@ -97,8 +94,8 @@ namespace Microsoft.Recognizers.Text.NumberWithUnit
                             Length = ers[idx].Length,
                             Start = ers[idx].Start,
                             Text = ers[idx].Text,
-                            Type = ers[idx].Type
-                        }
+                            Type = ers[idx].Type,
+                        },
                     };
                     result.Add(tmpExtractResult);
                 }

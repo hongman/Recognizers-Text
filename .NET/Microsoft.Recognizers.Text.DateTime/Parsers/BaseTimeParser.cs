@@ -7,7 +7,7 @@ namespace Microsoft.Recognizers.Text.DateTime
 {
     public class BaseTimeParser : IDateTimeParser
     {
-        public static readonly string ParserName = Constants.SYS_DATETIME_TIME; //"Time";
+        public static readonly string ParserName = Constants.SYS_DATETIME_TIME; // "Time";
 
         private readonly ITimeParserConfiguration config;
 
@@ -29,16 +29,15 @@ namespace Microsoft.Recognizers.Text.DateTime
                 DateTimeResolutionResult innerResult;
 
                 // Resolve timezome
-                if ((config.Options & DateTimeOptions.EnablePreview) != 0 &&
-                    er.Data is KeyValuePair<string, ExtractResult>)
+                if (TimeZoneUtility.ShouldResolveTimeZone(er, config.Options))
                 {
-                    var timezoneEr = ((KeyValuePair<string, ExtractResult>) er.Data).Value;
+                    var metadata = er.Data as Dictionary<string, object>;
+                    var timezoneEr = metadata[Constants.SYS_DATETIME_TIMEZONE] as ExtractResult;
                     var timezonePr = config.TimeZoneParser.Parse(timezoneEr);
 
-                    innerResult = InternalParse(er.Text.Substring(0, (int)(er.Length - timezoneEr.Length)),
-                        referenceTime);
+                    innerResult = InternalParse(er.Text.Substring(0, (int)(er.Text.Length - timezoneEr.Length)), referenceTime);
 
-                    if (timezonePr.Value != null)
+                    if (timezonePr != null && timezonePr.Value != null)
                     {
                         innerResult.TimeZoneResolution = ((DateTimeResolutionResult)timezonePr.Value).TimeZoneResolution;
                     }
@@ -52,12 +51,12 @@ namespace Microsoft.Recognizers.Text.DateTime
                 {
                     innerResult.FutureResolution = new Dictionary<string, string>
                     {
-                        {TimeTypeConstants.TIME, FormatUtil.FormatTime((DateObject)innerResult.FutureValue)}
+                        { TimeTypeConstants.TIME, DateTimeFormatUtil.FormatTime((DateObject)innerResult.FutureValue) },
                     };
 
                     innerResult.PastResolution = new Dictionary<string, string>
                     {
-                        {TimeTypeConstants.TIME, FormatUtil.FormatTime((DateObject)innerResult.PastValue)}
+                        { TimeTypeConstants.TIME, DateTimeFormatUtil.FormatTime((DateObject)innerResult.PastValue) },
                     };
 
                     value = innerResult;
@@ -72,11 +71,16 @@ namespace Microsoft.Recognizers.Text.DateTime
                 Type = er.Type,
                 Data = er.Data,
                 Value = value,
-                TimexStr = value == null ? "" : ((DateTimeResolutionResult)value).Timex,
-                ResolutionStr = ""
+                TimexStr = value == null ? string.Empty : ((DateTimeResolutionResult)value).Timex,
+                ResolutionStr = string.Empty,
             };
 
             return ret;
+        }
+
+        public List<DateTimeParseResult> FilterResults(string query, List<DateTimeParseResult> candidateResults)
+        {
+            return candidateResults;
         }
 
         protected virtual DateTimeResolutionResult InternalParse(string text, DateObject referenceTime)
@@ -92,6 +96,7 @@ namespace Microsoft.Recognizers.Text.DateTime
             var offset = 0;
 
             var match = this.config.AtRegex.Match(trimmedText);
+
             if (!match.Success)
             {
                 match = this.config.AtRegex.Match(this.config.TimeTokenPrefix + trimmedText);
@@ -123,7 +128,7 @@ namespace Microsoft.Recognizers.Text.DateTime
                     }
 
                     ret.Timex = "T" + hour.ToString("D2");
-                    ret.FutureValue = ret.PastValue = 
+                    ret.FutureValue = ret.PastValue =
                         DateObject.MinValue.SafeCreateFromValue(referenceTime.Year, referenceTime.Month, referenceTime.Day, hour, 0, 0);
                     ret.Success = true;
                     return ret;
@@ -134,13 +139,11 @@ namespace Microsoft.Recognizers.Text.DateTime
 
             foreach (var regex in regexes)
             {
-                offset = 0;
-                match = regex.Match(trimmedText);
+                var exactMatch = regex.MatchExact(trimmedText, trim: true);
 
-                var mealStr = string.Empty;
-                if (match.Success && match.Index == offset && match.Length == trimmedText.Length)
+                if (exactMatch.Success)
                 {
-                    return Match2Time(match, referenceTime);
+                    return Match2Time(exactMatch.Match, referenceTime);
                 }
             }
 
@@ -177,6 +180,7 @@ namespace Microsoft.Recognizers.Text.DateTime
                     {
                         min += this.config.Numbers[tensStr];
                     }
+
                     hasMin = true;
                 }
             }
@@ -276,6 +280,7 @@ namespace Microsoft.Recognizers.Text.DateTime
                 {
                     hour -= Constants.HalfDayHourCount;
                 }
+
                 if (!config.UtilityConfiguration.AmPmDescRegex.Match(descStr).Success)
                 {
                     hasAm = true;
@@ -288,6 +293,7 @@ namespace Microsoft.Recognizers.Text.DateTime
                 {
                     hour += Constants.HalfDayHourCount;
                 }
+
                 hasPm = true;
             }
 
@@ -330,11 +336,6 @@ namespace Microsoft.Recognizers.Text.DateTime
             ret.Success = true;
 
             return ret;
-        }
-
-        public List<DateTimeParseResult> FilterResults(string query, List<DateTimeParseResult> candidateResults)
-        {
-            return candidateResults;
         }
     }
 }

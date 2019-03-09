@@ -1,18 +1,16 @@
 ﻿using System.Collections.Immutable;
-using System.Text.RegularExpressions;
-
-using Microsoft.Recognizers.Text.DateTime.English.Utilities;
-using Microsoft.Recognizers.Definitions.English;
 using Microsoft.Recognizers.Definitions;
-using Microsoft.Recognizers.Text.Number.English;
+using Microsoft.Recognizers.Definitions.English;
+using Microsoft.Recognizers.Text.DateTime.English.Utilities;
 using Microsoft.Recognizers.Text.Number;
+using Microsoft.Recognizers.Text.Number.English;
 
 namespace Microsoft.Recognizers.Text.DateTime.English
 {
     public class EnglishCommonDateTimeParserConfiguration : BaseDateParserConfiguration, ICommonDateTimeParserConfiguration
     {
-
-        public EnglishCommonDateTimeParserConfiguration(IOptionsConfiguration config) : base(config)
+        public EnglishCommonDateTimeParserConfiguration(IOptionsConfiguration config)
+            : base(config)
         {
             UtilityConfiguration = new EnglishDatetimeUtilityConfiguration();
 
@@ -31,6 +29,7 @@ namespace Microsoft.Recognizers.Text.DateTime.English
             IntegerExtractor = Number.English.IntegerExtractor.GetInstance();
             OrdinalExtractor = Number.English.OrdinalExtractor.GetInstance();
 
+            TimeZoneParser = new BaseTimeZoneParser();
             NumberParser = new BaseNumberParser(new EnglishNumberParserConfiguration());
             DateExtractor = new BaseDateExtractor(new EnglishDateExtractorConfiguration(this));
             TimeExtractor = new BaseTimeExtractor(new EnglishTimeExtractorConfiguration(this));

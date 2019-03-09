@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-
 using Microsoft.Recognizers.Definitions.German;
 
 namespace Microsoft.Recognizers.Text.DateTime.German
@@ -9,9 +8,76 @@ namespace Microsoft.Recognizers.Text.DateTime.German
     public class GermanDateTimePeriodExtractorConfiguration : BaseOptionsConfiguration,
         IDateTimePeriodExtractorConfiguration
     {
-        public string TokenBeforeDate { get; }
+        public static readonly Regex TimeNumberCombinedWithUnit =
+            new Regex(
+                DateTimeDefinitions.TimeNumberCombinedWithUnit,
+                RegexOptions.Singleline);
 
-        public GermanDateTimePeriodExtractorConfiguration(IOptionsConfiguration config) : base(config)
+        public static readonly Regex PeriodTimeOfDayWithDateRegex =
+            new Regex(
+                DateTimeDefinitions.PeriodTimeOfDayWithDateRegex,
+                RegexOptions.Singleline);
+
+        public static readonly Regex RelativeTimeUnitRegex =
+            new Regex(DateTimeDefinitions.RelativeTimeUnitRegex, RegexOptions.Singleline);
+
+        public static readonly Regex RestOfDateTimeRegex =
+            new Regex(DateTimeDefinitions.RestOfDateTimeRegex, RegexOptions.Singleline);
+
+        public static readonly Regex AmDescRegex =
+            new Regex(DateTimeDefinitions.AmDescRegex, RegexOptions.Singleline);
+
+        public static readonly Regex PmDescRegex =
+            new Regex(DateTimeDefinitions.PmDescRegex, RegexOptions.Singleline);
+
+        public static readonly Regex WithinNextPrefixRegex =
+            new Regex(DateTimeDefinitions.WithinNextPrefixRegex, RegexOptions.Singleline);
+
+        public static readonly Regex DateUnitRegex =
+            new Regex(DateTimeDefinitions.DateUnitRegex, RegexOptions.Singleline);
+
+        public static readonly Regex PrefixDayRegex =
+            new Regex(
+                DateTimeDefinitions.PrefixDayRegex,
+                RegexOptions.Singleline | RegexOptions.RightToLeft);
+
+        public static readonly Regex SuffixRegex =
+            new Regex(DateTimeDefinitions.SuffixRegex, RegexOptions.Singleline);
+
+        public static readonly Regex BeforeRegex =
+            new Regex(DateTimeDefinitions.BeforeRegex, RegexOptions.Singleline);
+
+        public static readonly Regex AfterRegex =
+            new Regex(DateTimeDefinitions.AfterRegex, RegexOptions.Singleline);
+
+        private static readonly Regex[] SimpleCases =
+        {
+            GermanTimePeriodExtractorConfiguration.PureNumFromTo,
+            GermanTimePeriodExtractorConfiguration.PureNumBetweenAnd,
+        };
+
+        private static readonly Regex PeriodTimeOfDayRegex =
+            new Regex(DateTimeDefinitions.PeriodTimeOfDayRegex, RegexOptions.Singleline);
+
+        private static readonly Regex PeriodSpecificTimeOfDayRegex =
+            new Regex(
+                DateTimeDefinitions.PeriodSpecificTimeOfDayRegex,
+                RegexOptions.Singleline);
+
+        private static readonly Regex TimeUnitRegex =
+            new Regex(DateTimeDefinitions.TimeUnitRegex, RegexOptions.Singleline);
+
+        private static readonly Regex TimeFollowedUnit =
+            new Regex(DateTimeDefinitions.TimeFollowedUnit, RegexOptions.Singleline);
+
+        private static readonly Regex GeneralEndingRegex =
+            new Regex(DateTimeDefinitions.GeneralEndingRegex, RegexOptions.Singleline);
+
+        private static readonly Regex MiddlePauseRegex =
+            new Regex(DateTimeDefinitions.MiddlePauseRegex, RegexOptions.Singleline);
+
+        public GermanDateTimePeriodExtractorConfiguration(IOptionsConfiguration config)
+            : base(config)
         {
             TokenBeforeDate = DateTimeDefinitions.TokenBeforeDate;
 
@@ -22,70 +88,6 @@ namespace Microsoft.Recognizers.Text.DateTime.German
             DurationExtractor = new BaseDurationExtractor(new GermanDurationExtractorConfiguration(this));
             TimePeriodExtractor = new BaseTimePeriodExtractor(new GermanTimePeriodExtractorConfiguration(this));
         }
-
-        private static readonly Regex[] SimpleCases =
-        {
-            GermanTimePeriodExtractorConfiguration.PureNumFromTo,
-            GermanTimePeriodExtractorConfiguration.PureNumBetweenAnd
-        };
-
-        private static readonly Regex PeriodTimeOfDayRegex =
-            new Regex(DateTimeDefinitions.PeriodTimeOfDayRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        private static readonly Regex PeriodSpecificTimeOfDayRegex =
-            new Regex(DateTimeDefinitions.PeriodSpecificTimeOfDayRegex,
-                RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        private static readonly Regex TimeUnitRegex =
-            new Regex(DateTimeDefinitions.TimeUnitRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        private static readonly Regex TimeFollowedUnit =
-            new Regex(DateTimeDefinitions.TimeFollowedUnit, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex TimeNumberCombinedWithUnit =
-            new Regex(DateTimeDefinitions.TimeNumberCombinedWithUnit,
-                RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex PeriodTimeOfDayWithDateRegex =
-            new Regex(DateTimeDefinitions.PeriodTimeOfDayWithDateRegex,
-                RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex RelativeTimeUnitRegex =
-            new Regex(DateTimeDefinitions.RelativeTimeUnitRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex RestOfDateTimeRegex =
-            new Regex(DateTimeDefinitions.RestOfDateTimeRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        private static readonly Regex GeneralEndingRegex =
-            new Regex(DateTimeDefinitions.GeneralEndingRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        private static readonly Regex MiddlePauseRegex =
-            new Regex(DateTimeDefinitions.MiddlePauseRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex AmDescRegex =
-            new Regex(DateTimeDefinitions.AmDescRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex PmDescRegex =
-            new Regex(DateTimeDefinitions.PmDescRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex WithinNextPrefixRegex =
-            new Regex(DateTimeDefinitions.WithinNextPrefixRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex DateUnitRegex =
-            new Regex(DateTimeDefinitions.DateUnitRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex PrefixDayRegex =
-            new Regex(DateTimeDefinitions.PrefixDayRegex,
-                RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.RightToLeft);
-
-        public static readonly Regex SuffixRegex =
-            new Regex(DateTimeDefinitions.SuffixRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex BeforeRegex =
-            new Regex(DateTimeDefinitions.BeforeRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        public static readonly Regex AfterRegex =
-            new Regex(DateTimeDefinitions.AfterRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
         public IEnumerable<Regex> SimpleCasesRegex => SimpleCases;
 
@@ -99,14 +101,15 @@ namespace Microsoft.Recognizers.Text.DateTime.German
 
         public Regex FollowedUnit => TimeFollowedUnit;
 
-        public Regex PastPrefixRegex => GermanDatePeriodExtractorConfiguration.PastPrefixRegex;
+        public Regex PreviousPrefixRegex => GermanDatePeriodExtractorConfiguration.PreviousPrefixRegex;
 
         public Regex NextPrefixRegex => GermanDatePeriodExtractorConfiguration.NextPrefixRegex;
 
         public Regex FutureSuffixRegex => GermanDatePeriodExtractorConfiguration.FutureSuffixRegex;
 
-        public Regex WeekDayRegex => new Regex(DateTimeDefinitions.WeekDayRegex,
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        public Regex WeekDayRegex => new Regex(
+            DateTimeDefinitions.WeekDayRegex,
+            RegexOptions.Singleline);
 
         Regex IDateTimePeriodExtractorConfiguration.PrefixDayRegex => PrefixDayRegex;
 
@@ -138,6 +141,8 @@ namespace Microsoft.Recognizers.Text.DateTime.German
 
         Regex IDateTimePeriodExtractorConfiguration.AfterRegex => AfterRegex;
 
+        public string TokenBeforeDate { get; }
+
         public IExtractor CardinalExtractor { get; }
 
         public IDateTimeExtractor SingleDateExtractor { get; }
@@ -150,7 +155,7 @@ namespace Microsoft.Recognizers.Text.DateTime.German
 
         public IDateTimeExtractor TimePeriodExtractor { get; }
 
-        //TODO: these three methods are the same in DatePeriod, should be abstracted
+        // TODO: these three methods are the same in DatePeriod, should be abstracted
         public bool GetFromTokenIndex(string text, out int index)
         {
             index = -1;
@@ -177,8 +182,9 @@ namespace Microsoft.Recognizers.Text.DateTime.German
 
         public bool HasConnectorToken(string text)
         {
-            var match = Regex.Match(text, DateTimeDefinitions.RangeConnectorRegex);
-            return match.Success && match.Length == text.Trim().Length;
+            var rangeConnectorRegex = new Regex(DateTimeDefinitions.RangeConnectorRegex);
+
+            return rangeConnectorRegex.IsExactMatch(text, trim: true);
         }
     }
 }

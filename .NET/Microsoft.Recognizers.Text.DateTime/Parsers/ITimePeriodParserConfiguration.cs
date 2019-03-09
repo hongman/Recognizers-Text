@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using Microsoft.Recognizers.Text.DateTime.Utilities;
-using Microsoft.Recognizers.Text.Number;
 
 namespace Microsoft.Recognizers.Text.DateTime
 {
@@ -13,6 +12,8 @@ namespace Microsoft.Recognizers.Text.DateTime
 
         IExtractor IntegerExtractor { get; }
 
+        IDateTimeParser TimeZoneParser { get; }
+
         Regex PureNumberFromToRegex { get; }
 
         Regex PureNumberBetweenAndRegex { get; }
@@ -20,7 +21,7 @@ namespace Microsoft.Recognizers.Text.DateTime
         Regex SpecificTimeFromToRegex { get; }
 
         Regex SpecificTimeBetweenAndRegex { get; }
-        
+
         Regex TimeOfDayRegex { get; }
 
         Regex GeneralEndingRegex { get; }

@@ -5,7 +5,7 @@ namespace Microsoft.Recognizers.Text.DateTime
 {
     public interface IDateTimeAltExtractorConfiguration
     {
-        IDateTimeExtractor DateExtractor { get; }
+        IDateExtractor DateExtractor { get; }
 
         IDateTimeExtractor DatePeriodExtractor { get; }
 
@@ -16,5 +16,7 @@ namespace Microsoft.Recognizers.Text.DateTime
         Regex OrRegex { get; }
 
         Regex DayRegex { get; }
+
+        Regex RangePrefixRegex { get; }
     }
 }

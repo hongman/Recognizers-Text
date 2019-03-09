@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using Microsoft.Recognizers.Text.Utilities;
+
 namespace Microsoft.Recognizers.Text.Number
 {
     public abstract class AbstractNumberModel : IModel
@@ -20,8 +22,10 @@ namespace Microsoft.Recognizers.Text.Number
 
         public List<ModelResult> Parse(string query)
         {
-
             var parsedNumbers = new List<ParseResult>();
+
+            // Preprocess the query
+            query = QueryProcessor.Preprocess(query, caseSensitive: true);
 
             try
             {
@@ -55,7 +59,8 @@ namespace Microsoft.Recognizers.Text.Number
 
                 // Only support "subtype" for English for now
                 // As some languages like German, we miss handling some subtypes between "decimal" and "integer"
-                if (!string.IsNullOrEmpty(o.Type) && Constants.ValidSubTypes.Contains(o.Type) && extractorType.Contains(Constants.ENGLISH))
+                if (!string.IsNullOrEmpty(o.Type) &&
+                    Constants.ValidSubTypes.Contains(o.Type) && extractorType.Contains(Constants.ENGLISH))
                 {
                     resolution.Add(ResolutionKey.SubType, o.Type);
                 }
@@ -66,7 +71,7 @@ namespace Microsoft.Recognizers.Text.Number
                     End = end,
                     Resolution = resolution,
                     Text = o.Text,
-                    TypeName = ModelTypeName
+                    TypeName = ModelTypeName,
                 };
             }).ToList();
         }

@@ -51,7 +51,7 @@ CurrencySuffixList: !dictionary
     Bangladeshi taka: bangladeshi taka|৳|bdt|taka|takas|bangladeshi takas
     Paisa: poisha|paisa
 #Bhutanese ngultrum
-    Bhutanese ngultrum: Bhutanese ngultrum|nu.|btn
+    Bhutanese ngultrum: bhutanese ngultrum|nu.|btn
     Chetrum: chetrums|chetrum
 #Bolivian boliviano
     Bolivian boliviano: bolivian boliviano|bob|bs.|bolivia boliviano|bolivia bolivianos|bolivian bolivianos
@@ -80,7 +80,7 @@ CurrencySuffixList: !dictionary
     Croatian kuna: croatian kuna|kn|hrk|croatia kuna|croatian kunas|croatian kuna kunas
     Lipa: lipa
 #Czech koruna
-    Czech koruna: czech koruna|czk|Kč|czech korunas
+    Czech koruna: czech koruna|czk|kč|czech korunas
     Haléř: haléř
 #Eritrean nakfa
     Eritrean nakfa: eritrean nakfa|nfk|ern|eritrean nakfas
@@ -90,10 +90,10 @@ CurrencySuffixList: !dictionary
     Gambian dalasi: gmd
     Butut: bututs|butut
 #Georgian lari
-    Georgian lari: Georgian lari|lari|gel|₾
+    Georgian lari: georgian lari|lari|gel|₾
     Tetri: tetri
 #Ghanaian cedi
-    Ghanaian cedi: Ghanaian cedi|ghs|₵|gh₵
+    Ghanaian cedi: ghanaian cedi|ghs|₵|gh₵
     Pesewa: pesewas|pesewa
 #Guatemalan quetzal
     Guatemalan quetzal: guatemalan quetzal|gtq|guatemala quetzal
@@ -115,7 +115,7 @@ CurrencySuffixList: !dictionary
 #Japanese yen
     Japanese yen: japanese yen|jpy|yen|-yen|¥|yens|japanese yens|japan yen|japan yens
 #Kazakhstani tenge
-    Kazakhstani tenge: Kazakhstani tenge|kzt
+    Kazakhstani tenge: kazakhstani tenge|kazakh tenge|kazak tenge|kzt
 #Kenyan shilling
     Kenyan shilling: kenyan shilling|sh|kes
 #North Korean won
@@ -156,7 +156,7 @@ CurrencySuffixList: !dictionary
 #Mozambican metical
     Mozambican metical: mozambican metical|mt|mzn|mozambica metical|mozambica meticals|mozambican meticals
 #Burmese kyat
-    Burmese kyat: Burmese kyat|ks|mmk
+    Burmese kyat: burmese kyat|ks|mmk
     Pya: pya
 #Nicaraguan córdoba
     Nicaraguan córdoba: nicaraguan córdoba|nio
@@ -193,7 +193,7 @@ CurrencySuffixList: !dictionary
 #São Tomé and Príncipe dobra
     São Tomé and Príncipe dobra: são tomé and príncipe dobra|dobras|dobra|std
 #Sierra Leonean leone
-    Sierra Leonean leone: sierra Leonean leone|sll|leone|le
+    Sierra Leonean leone: sierra leonean leone|sll|leone|le
 #Spain
     Peseta: pesetas|peseta
 #Netherlands guilder
@@ -238,15 +238,15 @@ CurrencySuffixList: !dictionary
     Leu: leu
     Ban: bani|-ban|ban
 #Rupee
-    Nepalese rupee: nepalese rupee|npr
-    Pakistani rupee: pakistani rupee|pkr
-    Indian rupee: indian rupee|inr|₹|india rupee
-    Seychellois rupee: seychellois rupee|scr|sr|sre
-    Mauritian rupee: mauritian rupee|mur
-    Maldivian rufiyaa: maldivian rufiyaa|rf|mvr|.ރ|maldive rufiyaa
-    Sri Lankan rupee: sri Lankan rupee|lkr|රු|ரூ
-    Indonesian rupiah: Indonesian rupiah|rupiah|perak|rp|idr
-    Rupee: rupee|rs
+    Nepalese rupee: nepalese rupees|nepalese rupee|npr
+    Pakistani rupee: pakistani rupees|pakistani rupee|pkr
+    Indian rupee: indian rupees|indian rupee|inr|₹|india rupees|india rupee
+    Seychellois rupee: seychellois rupees|seychellois rupee|scr|sr|sre
+    Mauritian rupee: mauritian rupees|mauritian rupee|mur
+    Maldivian rufiyaa: maldivian rufiyaas|maldivian rufiyaa|rf|mvr|.ރ|maldive rufiyaas|maldive rufiyaa
+    Sri Lankan rupee: sri lankan rupees|sri lankan rupee|lkr|රු|ரூ
+    Indonesian rupiah: indonesian rupiah|rupiah|perak|rp|idr
+    Rupee: rupee|rupees|rs
 #Krone
     Danish krone: danish krone|dkk|denmark krone|denmark krones|danish krones
     Norwegian krone: norwegian krone|nok|norway krone|norway krones|norwegian krones
@@ -362,7 +362,7 @@ CurrencySuffixList: !dictionary
     Tuvaluan dollar: tuvaluan dollars|tuvaluan dollar|tuvaluan $
     Dollar: dollars|dollar|$
 #Chinese yuan
-    Chinese yuan: yuan|kuai|chinese yuan|renminbi|cny|rmb|￥
+    Chinese yuan: yuan|kuai|chinese yuan|renminbi|cny|rmb|￥|元
     Fen: fen
     Jiao: jiao|mao
 #Additional
@@ -640,7 +640,7 @@ CompoundUnitConnectorRegex: !simpleRegex
 CurrencyPrefixList: !dictionary
   types: [ string, string ]
   entries:
-#Dollar Prefix
+# Currency Prefix Symbols/Terms
     Dollar: $
     United States dollar: united states $|us$|us $|u.s. $|u.s $
     East Caribbean dollar: east caribbean $
@@ -660,6 +660,7 @@ CurrencyPrefixList: !dictionary
     Fijian dollar: fijian $|fiji $
     Guyanese dollar: gy$|gy $|g$|g $
     Hong Kong dollar: hong kong $|hk$|hkd|hk $
+    Indian rupee: ₹
     Jamaican dollar: jamaican $|j$|jamaica $
     Kiribati dollar: kiribati $
     Liberian dollar: liberian $|liberia $
@@ -769,7 +770,7 @@ AmbiguousDimensionUnitList: !list
     - pts
     - in
     - dm
-    - \"
+    - '"'
 #EnglishNumberWithUnitExtractorConfiguration
 BuildPrefix: !simpleRegex
   def: (?<=(\s|^))
@@ -791,7 +792,7 @@ LengthSuffixList: !dictionary
     Picometer: pm|picometer|picometre|picometers|picometres|pico meter|pico meters|pico metres|pico metre
     Mile: -mile|mile|miles
     Yard: yard|yards
-    Inch: -inch|inch|inches|in|\"
+    Inch: -inch|inch|inches|in|"
     Foot: -foot|foot|feet|ft
     Light year: light year|light-year|light years|light-years
     Pt: pt|pts
@@ -823,7 +824,7 @@ TemperatureSuffixList: !dictionary
   types: [ string, string ]
   entries:
     F: degrees fahrenheit|degree fahrenheit|deg fahrenheit|degs fahrenheit|fahrenheit|°f|degrees farenheit|degree farenheit|deg farenheit|degs farenheit|degrees f|degree f|deg f|degs f|farenheit|f
-    K: k|kelvin
+    K: k|K|kelvin
     R: rankine|°r
     D: delisle|°de
     C: degrees celsius|degree celsius|deg celsius|degs celsius|celsius|degrees celcius|degree celcius|celcius|deg celcius|degs celcius|degrees centigrade|degree centigrade|centigrade|degrees centigrate|degree centigrate|degs centigrate|deg centigrate|centigrate|degrees c|degree c|deg c|degs c|°c|c
@@ -877,9 +878,9 @@ WeightSuffixList: !dictionary
     Gallon: -gallon|gallons|gallon
     Metric ton: metric tons|metric ton
     Ton: -ton|ton|tons|tonne|tonnes
-    Pound: pound|pounds|lb
+    Pound: pound|pounds|lb|lbs
     Ounce: -ounce|ounce|oz|ounces
-    Weight unit: pennyweight|grain|british long ton|US short hundredweight|stone|dram
+    Weight unit: pennyweight|grain|british long ton|us short hundredweight|stone|dram
 AmbiguousWeightUnitList: !list
   types: [ string ]
   entries:
@@ -887,4 +888,5 @@ AmbiguousWeightUnitList: !list
     - oz
     - stone
     - dram
+    - lbs
 ...

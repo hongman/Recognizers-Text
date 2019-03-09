@@ -772,18 +772,6 @@
     ]
   },
   {
-    "Input": "I met him 2 months 1 day 2 hours ago",
-    "NotSupported": "javascript, python",
-    "Results": [
-      {
-        "Text": "2 months 1 day 2 hours ago",
-        "Type": "datetime",
-        "Start": 10,
-        "Length": 26
-      }
-    ]
-  },
-  {
     "Input": "I will leave 1 day 30 minutes later",
     "NotSupported": "javascript, python",
     "Results": [
@@ -825,17 +813,6 @@
         "Type": "datetime",
         "Start": 23,
         "Length": 11
-      }
-    ]
-  },
-  {
-    "Input": "I will leave in 2 minutes",
-    "Results": [
-      {
-        "Text": "in 2 minutes",
-        "Type": "datetime",
-        "Start": 13,
-        "Length": 12
       }
     ]
   },

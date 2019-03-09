@@ -11,7 +11,7 @@ import { BaseDateTimePeriodExtractor, BaseDateTimePeriodParser } from "../baseDa
 import { ChineseDurationExtractor } from "./durationConfiguration";
 import { ChineseTimeExtractor, ChineseTimeParser } from "./timeConfiguration";
 import { ChineseDateExtractor, ChineseDateParser } from "./dateConfiguration";
-import { Token, IDateTimeUtilityConfiguration, DateUtils, FormatUtil, DateTimeResolutionResult, StringMap } from "../utilities";
+import { Token, IDateTimeUtilityConfiguration, DateUtils, DateTimeFormatUtil, DateTimeResolutionResult, StringMap } from "../utilities";
 import { ChineseDateTime } from "../../resources/chineseDateTime";
 import { IDateTimeParser, DateTimeParseResult } from "../parsers"
 
@@ -26,7 +26,8 @@ class ChineseDateTimeExtractorConfiguration implements IDateTimeExtractorConfigu
     readonly nightRegex: RegExp
     readonly timeOfTodayBeforeRegex: RegExp
     readonly simpleTimeOfTodayBeforeRegex: RegExp
-    readonly theEndOfRegex: RegExp
+    readonly specificEndOfRegex: RegExp
+    readonly unspecificEndOfRegex: RegExp
     readonly unitRegex: RegExp
     readonly prepositionRegex: RegExp
     readonly utilityConfiguration: IDateTimeUtilityConfiguration
@@ -138,7 +139,8 @@ class ChineseDateTimeParserConfiguration implements IDateTimeParserConfiguration
     readonly simpleTimeOfTodayAfterRegex: RegExp;
     readonly simpleTimeOfTodayBeforeRegex: RegExp;
     readonly specificTimeOfDayRegex: RegExp;
-    readonly theEndOfRegex: RegExp;
+    readonly specificEndOfRegex: RegExp;
+    readonly unspecificEndOfRegex: RegExp;
     readonly unitRegex: RegExp;
     readonly unitMap: ReadonlyMap<string, string>;
     readonly numbers: ReadonlyMap<string, number>;
@@ -213,9 +215,9 @@ export class ChineseDateTimeParser extends BaseDateTimeParser {
             }
             if (innerResult.success) {
                 innerResult.futureResolution = {};
-                innerResult.futureResolution[TimeTypeConstants.DATETIME] = FormatUtil.formatDateTime(innerResult.futureValue);
+                innerResult.futureResolution[TimeTypeConstants.DATETIME] = DateTimeFormatUtil.formatDateTime(innerResult.futureValue);
                 innerResult.pastResolution = {};
-                innerResult.pastResolution[TimeTypeConstants.DATETIME] = FormatUtil.formatDateTime(innerResult.pastValue);
+                innerResult.pastResolution[TimeTypeConstants.DATETIME] = DateTimeFormatUtil.formatDateTime(innerResult.pastValue);
                 value = innerResult;
             }
         }
@@ -270,7 +272,7 @@ export class ChineseDateTimeParser extends BaseDateTimeParser {
             timeStr = timeStr.substring(0, timeStr.length - 4);
         }
 
-        timeStr = "T" + FormatUtil.toString(hour, 2) + timeStr.substring(3);
+        timeStr = "T" + DateTimeFormatUtil.toString(hour, 2) + timeStr.substring(3);
         ret.timex = pr1.timexStr + timeStr;
 
         let val = pr2.value;
@@ -321,9 +323,9 @@ export class ChineseDateTimeParser extends BaseDateTimeParser {
             if (timeStr.endsWith("ampm")) {
                 timeStr = timeStr.substring(0, timeStr.length - 4);
             }
-            timeStr = "T" + FormatUtil.toString(hour, 2) + timeStr.substring(3);
+            timeStr = "T" + DateTimeFormatUtil.toString(hour, 2) + timeStr.substring(3);
 
-            ret.timex = FormatUtil.formatDate(date) + timeStr;
+            ret.timex = DateTimeFormatUtil.formatDate(date) + timeStr;
             ret.futureValue = ret.pastValue = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, min, sec);
             ret.success = true;
             return ret;

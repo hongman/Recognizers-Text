@@ -6,7 +6,7 @@ namespace Microsoft.Recognizers.Text.DateTime
     public class BaseDateTimeParser : IDateTimeParser
     {
         public static readonly string ParserName = Constants.SYS_DATETIME_DATETIME; // "DateTime";
-        
+
         private readonly IDateTimeParserConfiguration config;
 
         public BaseDateTimeParser(IDateTimeParserConfiguration configuration)
@@ -51,12 +51,12 @@ namespace Microsoft.Recognizers.Text.DateTime
                 {
                     innerResult.FutureResolution = new Dictionary<string, string>
                     {
-                        {TimeTypeConstants.DATETIME, FormatUtil.FormatDateTime((DateObject) innerResult.FutureValue)}
+                        { TimeTypeConstants.DATETIME, DateTimeFormatUtil.FormatDateTime((DateObject)innerResult.FutureValue) },
                     };
 
                     innerResult.PastResolution = new Dictionary<string, string>
                     {
-                        {TimeTypeConstants.DATETIME, FormatUtil.FormatDateTime((DateObject) innerResult.PastValue)}
+                        { TimeTypeConstants.DATETIME, DateTimeFormatUtil.FormatDateTime((DateObject)innerResult.PastValue) },
                     };
 
                     value = innerResult;
@@ -71,11 +71,16 @@ namespace Microsoft.Recognizers.Text.DateTime
                 Type = er.Type,
                 Data = er.Data,
                 Value = value,
-                TimexStr = value == null ? "" : ((DateTimeResolutionResult) value).Timex,
-                ResolutionStr = ""
+                TimexStr = value == null ? string.Empty : ((DateTimeResolutionResult)value).Timex,
+                ResolutionStr = string.Empty,
             };
 
             return ret;
+        }
+
+        public List<DateTimeParseResult> FilterResults(string query, List<DateTimeParseResult> candidateResults)
+        {
+            return candidateResults;
         }
 
         private DateTimeResolutionResult ParseBasicRegex(string text, DateObject referenceTime)
@@ -84,8 +89,7 @@ namespace Microsoft.Recognizers.Text.DateTime
             var trimmedText = text.Trim().ToLower();
 
             // Handle "now"
-            var match = this.config.NowRegex.Match(trimmedText);
-            if (match.Success && match.Index == 0 && match.Length == trimmedText.Length)
+            if (config.NowRegex.IsExactMatch(trimmedText, trim: true))
             {
                 this.config.GetMatchedNowTimex(trimmedText, out string timex);
                 ret.Timex = timex;
@@ -197,11 +201,11 @@ namespace Microsoft.Recognizers.Text.DateTime
             var sec = time.Second;
 
             // Handle morning, afternoon
-            if (this.config.PMTimeRegex.IsMatch(text) && hour < Constants.HalfDayHourCount)
+            if (this.config.PMTimeRegex.IsMatch(text) && WithinAfternoonHours(hour))
             {
                 hour += Constants.HalfDayHourCount;
             }
-            else if (this.config.AMTimeRegex.IsMatch(text) && hour >= Constants.HalfDayHourCount)
+            else if (this.config.AMTimeRegex.IsMatch(text) && WithinMorningHoursAndNoon(hour, min, sec))
             {
                 hour -= Constants.HalfDayHourCount;
             }
@@ -211,10 +215,11 @@ namespace Microsoft.Recognizers.Text.DateTime
             {
                 timeStr = timeStr.Substring(0, timeStr.Length - 4);
             }
+
             timeStr = "T" + hour.ToString("D2") + timeStr.Substring(3);
             ret.Timex = pr1.TimexStr + timeStr;
 
-            var val = (DateTimeResolutionResult) pr2.Value;
+            var val = (DateTimeResolutionResult)pr2.Value;
             if (hour <= Constants.HalfDayHourCount && !this.config.PMTimeRegex.IsMatch(text) && !this.config.AMTimeRegex.IsMatch(text) &&
                 !string.IsNullOrEmpty(val.Comment))
             {
@@ -229,11 +234,11 @@ namespace Microsoft.Recognizers.Text.DateTime
             pr2.TimexStr = timeStr;
             if (!string.IsNullOrEmpty(ret.Comment))
             {
-                ((DateTimeResolutionResult)pr2.Value).Comment = ret.Comment.Equals(Constants.Comment_AmPm) ? Constants.Comment_AmPm : "";
+                ((DateTimeResolutionResult)pr2.Value).Comment = ret.Comment.Equals(Constants.Comment_AmPm) ? Constants.Comment_AmPm : string.Empty;
             }
-            
+
             // Add the date and time object in case we want to split them
-            ret.SubDateTimeEntities = new List<object> {pr1, pr2};
+            ret.SubDateTimeEntities = new List<object> { pr1, pr2 };
 
             // Add timezone
             ret.TimeZoneResolution = ((DateTimeResolutionResult)pr2.Value).TimeZoneResolution;
@@ -249,13 +254,14 @@ namespace Microsoft.Recognizers.Text.DateTime
             int hour = 0, min = 0, sec = 0;
             string timeStr;
 
-            var wholeMatch = this.config.SimpleTimeOfTodayAfterRegex.Match(trimmedText);
-            if (!(wholeMatch.Success && wholeMatch.Length == trimmedText.Length))
+            var wholeMatch = this.config.SimpleTimeOfTodayAfterRegex.MatchExact(trimmedText, trim: true);
+
+            if (!wholeMatch.Success)
             {
-                wholeMatch = this.config.SimpleTimeOfTodayBeforeRegex.Match(trimmedText);
+                wholeMatch = this.config.SimpleTimeOfTodayBeforeRegex.MatchExact(trimmedText, trim: true);
             }
 
-            if (wholeMatch.Success && wholeMatch.Length == trimmedText.Length)
+            if (wholeMatch.Success)
             {
                 var hourStr = wholeMatch.Groups[Constants.HourGroupName].Value;
                 if (string.IsNullOrEmpty(hourStr))
@@ -267,6 +273,7 @@ namespace Microsoft.Recognizers.Text.DateTime
                 {
                     hour = int.Parse(hourStr);
                 }
+
                 timeStr = "T" + hour.ToString("D2");
             }
             else
@@ -291,14 +298,14 @@ namespace Microsoft.Recognizers.Text.DateTime
                     return ret;
                 }
 
-                var time = (DateObject) ((DateTimeResolutionResult) pr.Value).FutureValue;
+                var time = (DateObject)((DateTimeResolutionResult)pr.Value).FutureValue;
 
                 hour = time.Hour;
                 min = time.Minute;
                 sec = time.Second;
                 timeStr = pr.TimexStr;
             }
-            
+
             var match = this.config.SpecificTimeOfDayRegex.Match(trimmedText);
 
             if (match.Success)
@@ -318,9 +325,10 @@ namespace Microsoft.Recognizers.Text.DateTime
                 {
                     timeStr = timeStr.Substring(0, timeStr.Length - 4);
                 }
+
                 timeStr = "T" + hour.ToString("D2") + timeStr.Substring(3);
 
-                ret.Timex = FormatUtil.FormatDate(date) + timeStr;
+                ret.Timex = DateTimeFormatUtil.FormatDate(date) + timeStr;
                 ret.FutureValue = ret.PastValue = DateObject.MinValue.SafeCreateFromValue(date.Year, date.Month, date.Day, hour, min, sec);
                 ret.Success = true;
                 return ret;
@@ -333,6 +341,12 @@ namespace Microsoft.Recognizers.Text.DateTime
         {
             var ret = new DateTimeResolutionResult();
 
+            ret = ParseUnspecificTimeOfDate(text, refDateTime);
+            if (ret.Success)
+            {
+                return ret;
+            }
+
             var ers = this.config.DateExtractor.Extract(text, refDateTime);
             if (ers.Count != 1)
             {
@@ -340,33 +354,65 @@ namespace Microsoft.Recognizers.Text.DateTime
             }
 
             var beforeStr = text.Substring(0, ers[0].Start ?? 0);
-            if (this.config.TheEndOfRegex.IsMatch(beforeStr))
+            if (this.config.SpecificEndOfRegex.IsMatch(beforeStr))
             {
                 var pr = this.config.DateParser.Parse(ers[0], refDateTime);
                 var futureDate = (DateObject)((DateTimeResolutionResult)pr.Value).FutureValue;
                 var pastDate = (DateObject)((DateTimeResolutionResult)pr.Value).PastValue;
-                ret.Timex = pr.TimexStr + "T23:59";
-                ret.FutureValue = futureDate.AddDays(1).AddMinutes(-1);
-                ret.PastValue = pastDate.AddDays(1).AddMinutes(-1);
-                ret.Success = true;
+
+                ret = ResolveEndOfDay(pr.TimexStr, futureDate, pastDate);
             }
 
             return ret;
         }
 
-        // Handle cases like "two hours ago" 
+        private DateTimeResolutionResult ParseUnspecificTimeOfDate(string text, DateObject refDateTime)
+        {
+            // Handle 'eod', 'end of day'
+            var ret = new DateTimeResolutionResult();
+            var eod = this.config.UnspecificEndOfRegex.Match(text);
+            if (eod.Success)
+            {
+                ret = ResolveEndOfDay(DateTimeFormatUtil.FormatDate(refDateTime), refDateTime, refDateTime);
+            }
+
+            return ret;
+        }
+
+        private DateTimeResolutionResult ResolveEndOfDay(string timexPrefix, DateObject futureDate, DateObject pastDate)
+        {
+            var ret = new DateTimeResolutionResult();
+
+            ret.Timex = timexPrefix + "T23:59:59";
+            ret.FutureValue = futureDate.Date.AddDays(1).AddSeconds(-1);
+            ret.PastValue = pastDate.Date.AddDays(1).AddSeconds(-1);
+            ret.Success = true;
+
+            return ret;
+        }
+
+        private bool WithinAfternoonHours(int hour)
+        {
+            return hour < Constants.HalfDayHourCount;
+        }
+
+        private bool WithinMorningHoursAndNoon(int hour, int min, int sec)
+        {
+            return hour > Constants.HalfDayHourCount || (hour == Constants.HalfDayHourCount && (min > 0 || sec > 0));
+        }
+
+        // Handle cases like "two hours ago"
         private DateTimeResolutionResult ParserDurationWithAgoAndLater(string text, DateObject referenceTime)
         {
-
-            return AgoLaterUtil.ParseDurationWithAgoAndLater(text, referenceTime,
-                config.DurationExtractor, config.DurationParser, config.UnitMap, config.UnitRegex, 
-                config.UtilityConfiguration, config.GetSwiftDay);
+            return AgoLaterUtil.ParseDurationWithAgoAndLater(
+                text,
+                referenceTime,
+                config.DurationExtractor,
+                config.DurationParser,
+                config.UnitMap,
+                config.UnitRegex,
+                config.UtilityConfiguration,
+                config.GetSwiftDay);
         }
-
-        public List<DateTimeParseResult> FilterResults(string query, List<DateTimeParseResult> candidateResults)
-        {
-            return candidateResults;
-        }
-
     }
 }

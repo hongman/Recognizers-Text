@@ -2,14 +2,12 @@
 using System.Text.RegularExpressions;
 
 using Microsoft.Recognizers.Text.Matcher;
-using Microsoft.Recognizers.Text.Number;
 
 namespace Microsoft.Recognizers.Text.DateTime
 {
     public interface IMergedExtractorConfiguration : IOptionsConfiguration
     {
-
-        IDateTimeExtractor DateExtractor { get; }
+        IDateExtractor DateExtractor { get; }
 
         IDateTimeExtractor TimeExtractor { get; }
 
@@ -33,7 +31,7 @@ namespace Microsoft.Recognizers.Text.DateTime
 
         IExtractor IntegerExtractor { get; }
 
-        IEnumerable<Regex> FilterWordRegexList { get; }
+        IEnumerable<Regex> TermFilterRegexes { get; }
 
         Regex AfterRegex { get; }
 
@@ -58,6 +56,5 @@ namespace Microsoft.Recognizers.Text.DateTime
         StringMatcher SuperfluousWordMatcher { get; }
 
         Dictionary<Regex, Regex> AmbiguityFiltersDict { get; }
-
     }
 }
